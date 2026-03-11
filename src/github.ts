@@ -7,10 +7,11 @@ interface SearchResponse {
 }
 
 interface PRDetail {
-  head: { sha: string };
+  head: { sha: string; ref: string };
   base: { ref: string };
   comments: number;
   review_comments: number;
+  mergeable_state?: string;
 }
 
 interface Review {
@@ -58,7 +59,7 @@ async function enrichPR(
     // Fetch PR details, reviews, commit status, and check-runs in parallel
     const [prRes, reviewsRes] = await Promise.all([
       fetch(`${API}/repos/${repo}/pulls/${pr.number}`, { headers: headers(token) }),
-      fetch(`${API}/repos/${repo}/pulls/${pr.number}/reviews`, { headers: headers(token) }),
+      fetch(`${API}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`, { headers: headers(token) }),
     ]);
 
     // Reviews: count latest review per user
@@ -83,11 +84,15 @@ async function enrichPR(
     let totalComments = pr.comments ?? 0;
     let commitSha = "";
     let baseRef = "";
+    let headRef = "";
+    let behind = false;
     if (prRes.ok) {
       const detail: PRDetail = await prRes.json();
       totalComments += detail.review_comments ?? 0;
       commitSha = detail.head.sha;
       baseRef = detail.base.ref;
+      headRef = detail.head.ref;
+      behind = detail.mergeable_state === "behind";
     }
 
     // Check status from commit status + check-runs
@@ -107,9 +112,11 @@ async function enrichPR(
       }
 
       let checkRunsConclusion: CheckStatus = "pending";
+      let checkRunsCount = 0;
       if (checksRes.ok) {
         const checks: { total_count: number; check_runs: { conclusion: string | null; status: string }[] } =
           await checksRes.json();
+        checkRunsCount = checks.total_count;
         if (checks.total_count > 0) {
           const hasFailure = checks.check_runs.some(
             (run) => run.conclusion === "failure" || run.conclusion === "timed_out" || run.conclusion === "cancelled",
@@ -120,10 +127,11 @@ async function enrichPR(
         }
       }
 
-      if (commitState === "failure" || commitState === "error" || checkRunsConclusion === "failure") {
+      const noCI = commitCount === 0 && checkRunsCount === 0;
+      if (noCI) {
+        checkStatus = "success";
+      } else if (commitState === "failure" || commitState === "error" || checkRunsConclusion === "failure") {
         checkStatus = "failure";
-      } else if (commitCount === 0 && checkRunsConclusion === "pending") {
-        checkStatus = "pending";
       } else if (commitState === "pending" || checkRunsConclusion === "pending") {
         checkStatus = "pending";
       } else {
@@ -131,7 +139,7 @@ async function enrichPR(
       }
     }
 
-    return { ...pr, comments: totalComments, check_status: checkStatus, approvals: approvalCount, changes_requested: changesRequestedCount, base_ref: baseRef || undefined };
+    return { ...pr, comments: totalComments, check_status: checkStatus, approvals: approvalCount, changes_requested: changesRequestedCount, base_ref: baseRef || undefined, head_ref: headRef || undefined, behind };
   } catch {
     return pr;
   }
@@ -145,7 +153,7 @@ async function enrichReviewPR(
   const repo = getRepoName(pr.repository_url);
   try {
     const res = await fetch(
-      `${API}/repos/${repo}/pulls/${pr.number}/reviews`,
+      `${API}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`,
       { headers: headers(token) },
     );
     if (!res.ok) return { ...pr, my_review_status: "PENDING" };
@@ -215,7 +223,7 @@ async function fetchBaseRef(
     const res = await fetch(`${API}/repos/${repo}/pulls/${pr.number}`, { headers: headers(token) });
     if (res.ok) {
       const detail: PRDetail = await res.json();
-      return { ...pr, base_ref: detail.base.ref };
+      return { ...pr, base_ref: detail.base.ref, head_ref: detail.head.ref };
     }
   } catch { /* fall through */ }
   return pr;

@@ -54,8 +54,8 @@ export function getCachedTab(tab: string): Promise<PullRequestItem[] | null> {
     storage.get(key, (result) => {
       const entry: CachedTab | undefined = result[key];
       if (!entry) return resolve(null);
-      // Expire cache after 1 hour
-      if (Date.now() - entry.timestamp > 60 * 60 * 1000) return resolve(null);
+      // Expire cache after 4 hours
+      if (Date.now() - entry.timestamp > 4 * 60 * 60 * 1000) return resolve(null);
       resolve(entry.data);
     })
   );
@@ -77,5 +77,37 @@ export function clearCache(): Promise<void> {
       ["cached_user", "cached_assigned", "cached_reviews", "cached_merged"],
       () => resolve()
     )
+  );
+}
+
+// Batch read: single chrome.storage call instead of 5 separate ones
+export interface InitCache {
+  token: string | null;
+  user: GitHubUser | null;
+  assigned: PullRequestItem[] | null;
+  reviews: PullRequestItem[] | null;
+  merged: PullRequestItem[] | null;
+}
+
+export function getInitCache(): Promise<InitCache> {
+  if (!storage) return Promise.resolve({ token: null, user: null, assigned: null, reviews: null, merged: null });
+  const keys = ["gh_token", "cached_user", "cached_assigned", "cached_reviews", "cached_merged"];
+  const now = Date.now();
+  const maxAge = 4 * 60 * 60 * 1000;
+  return new Promise((resolve) =>
+    storage.get(keys, (result) => {
+      const tab = (key: string): PullRequestItem[] | null => {
+        const entry: { data: PullRequestItem[]; timestamp: number } | undefined = result[key];
+        if (!entry || now - entry.timestamp > maxAge) return null;
+        return entry.data;
+      };
+      resolve({
+        token: result.gh_token ?? null,
+        user: result.cached_user ?? null,
+        assigned: tab("cached_assigned"),
+        reviews: tab("cached_reviews"),
+        merged: tab("cached_merged"),
+      });
+    })
   );
 }

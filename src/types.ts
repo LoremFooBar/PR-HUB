@@ -20,4 +20,6 @@ export interface PullRequestItem {
   changes_requested?: number;
   my_review_status?: ReviewStatus;
   base_ref?: string;
+  head_ref?: string;
+  behind?: boolean;
 }

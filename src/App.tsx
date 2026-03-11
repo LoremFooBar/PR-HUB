@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { validateToken, fetchAuthoredPRs, fetchReviewPRs, fetchMergedPRs } from "./github";
 import type { GitHubUser, PullRequestItem } from "./types";
-import { getToken, setToken, removeToken, getCachedUser, setCachedUser, getCachedTab, setCachedTab, clearCache } from "./storage";
+import { getToken, setToken, removeToken, getCachedUser, setCachedUser, getCachedTab, setCachedTab, clearCache, getInitCache } from "./storage";
 import LoginScreen from "./components/LoginScreen";
 import Dashboard from "./components/Dashboard";
 import { DashboardSkeleton } from "./components/Skeleton";
@@ -106,39 +106,31 @@ export default function App() {
 
   useEffect(() => {
     async function init() {
-      const storedToken = await getToken();
-      if (!storedToken) {
+      // Single storage read for all cached data
+      const cache = await getInitCache();
+      if (!cache.token) {
         setLoading(false);
         return;
       }
 
-      // Try to show cached data instantly
-      const [cachedUser, cachedAssigned, cachedReviews, cachedMerged] = await Promise.all([
-        getCachedUser(),
-        getCachedTab("assigned"),
-        getCachedTab("reviews"),
-        getCachedTab("merged"),
-      ]);
-
-      if (cachedUser) {
-        setTokenState(storedToken);
-        setUser(cachedUser);
-        if (cachedAssigned) setAssigned(cachedAssigned);
-        if (cachedReviews) setReviews(cachedReviews);
-        if (cachedMerged) setMerged(cachedMerged);
+      if (cache.user) {
+        // Show cached data instantly
+        setTokenState(cache.token);
+        setUser(cache.user);
+        if (cache.assigned) setAssigned(cache.assigned);
+        if (cache.reviews) setReviews(cache.reviews);
+        if (cache.merged) setMerged(cache.merged);
         setLoading(false);
 
         // Revalidate in background
-        validateToken(storedToken)
+        validateToken(cache.token)
           .then(async (ghUser) => {
             setUser(ghUser);
             setCachedUser(ghUser);
-            // Refresh active tab (assigned is default), then prefetch others
-            await loadTab("assigned", storedToken, ghUser.login, true);
-            prefetchOtherTabs("assigned", storedToken, ghUser.login);
+            await loadTab("assigned", cache.token!, ghUser.login, true);
+            prefetchOtherTabs("assigned", cache.token!, ghUser.login);
           })
           .catch(async () => {
-            // Token expired — force re-login
             await removeToken();
             await clearCache();
             setTokenState(null);
@@ -150,7 +142,7 @@ export default function App() {
       } else {
         // No cache — go through normal login flow
         try {
-          await handleLogin(storedToken);
+          await handleLogin(cache.token);
         } catch {
           // Token invalid
         }

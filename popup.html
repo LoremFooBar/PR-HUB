@@ -4,8 +4,68 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GitHub PR Check</title>
+    <style>
+      /* Instant paint: critical skeleton styles inlined to avoid FOUC */
+      *, *::before, *::after { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        background: #fff;
+        overflow-y: scroll;
+        scrollbar-width: none;
+      }
+      body::-webkit-scrollbar { display: none; }
+      @media (prefers-color-scheme: dark) {
+        body { background: #0d1117; }
+        .init-skeleton-line { background: linear-gradient(90deg, #161b22 25%, #30363d 50%, #161b22 75%); background-size: 200% 100%; }
+      }
+      .init-shell { width: 500px; padding: 16px; }
+      .init-skeleton-line {
+        border-radius: 4px;
+        background: linear-gradient(90deg, #f6f8fa 25%, #d1d9e0 50%, #f6f8fa 75%);
+        background-size: 200% 100%;
+        animation: init-shimmer 1.5s ease-in-out infinite;
+      }
+      @keyframes init-shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+      .init-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+      .init-tabs { display: flex; gap: 12px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #d1d9e0; }
+      @media (prefers-color-scheme: dark) { .init-tabs { border-color: #30363d; } }
+      .init-item { padding: 8px 0; border-bottom: 1px solid #d1d9e0; }
+      @media (prefers-color-scheme: dark) { .init-item { border-color: #30363d; } }
+      .init-item:last-child { border-bottom: none; }
+      /* Hide skeleton once React mounts */
+      #init-skeleton:has(~ #root:not(:empty)) { display: none; }
+    </style>
   </head>
   <body>
+    <!-- Instant skeleton shown before JS loads -->
+    <div id="init-skeleton" class="init-shell">
+      <div class="init-h">
+        <div class="init-skeleton-line" style="width:90px;height:14px"></div>
+        <div class="init-skeleton-line" style="width:50px;height:14px"></div>
+      </div>
+      <div class="init-tabs">
+        <div class="init-skeleton-line" style="flex:1;height:12px"></div>
+        <div class="init-skeleton-line" style="flex:1;height:12px"></div>
+        <div class="init-skeleton-line" style="flex:1;height:12px"></div>
+      </div>
+      <div class="init-item">
+        <div class="init-skeleton-line" style="width:70%;height:12px;margin-bottom:10px"></div>
+        <div class="init-skeleton-line" style="width:40%;height:12px"></div>
+      </div>
+      <div class="init-item">
+        <div class="init-skeleton-line" style="width:100%;height:12px;margin-bottom:10px"></div>
+        <div class="init-skeleton-line" style="width:40%;height:12px"></div>
+      </div>
+      <div class="init-item">
+        <div class="init-skeleton-line" style="width:70%;height:12px;margin-bottom:10px"></div>
+        <div class="init-skeleton-line" style="width:40%;height:12px"></div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/popup.tsx"></script>
   </body>
