@@ -6,17 +6,29 @@
   "type": "module",
   "scripts": {
     "dev": "vite build --watch",
-    "build": "vite build"
+    "build": "vite build",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:ct": "playwright test -c playwright-ct.config.ts"
   },
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@playwright/experimental-ct-react": "^1.58.2",
+    "@swc/core": "^1.15.21",
+    "@swc/jest": "^0.2.39",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/chrome": "^0.0.287",
+    "@types/jest": "^30.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "playwright": "^1.58.2",
     "typescript": "^5.9.3",
     "vite": "^6.0.0"
   }

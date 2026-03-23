@@ -1,10 +1,9 @@
 import { useState } from "react";
-import type { GitHubUser, PullRequestItem } from "../types";
+import type { GitHubUser, PullRequestItem, Tab } from "../types";
 import { openOrFocusTab } from "../tabs";
 import PRList from "./PRList";
 import { PRListSkeleton } from "./Skeleton";
-
-type Tab = "assigned" | "reviews" | "merged";
+import { ReloadIcon } from "./Icons";
 
 interface DashboardProps {
   user: GitHubUser;
@@ -41,9 +40,7 @@ export default function Dashboard({ user, assigned, reviews, merged, isLoadingPR
           </a>
           <div className="header-actions">
             <button onClick={() => onReload(tab)} className="reload-btn" disabled={isLoadingPRs} title="Reload">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.001 7.001 0 0 1 15 8a1 1 0 1 1-2 0 5 5 0 0 0-5-5.5ZM1 8a1 1 0 0 1 2 0 5 5 0 0 0 5 5.5 5.487 5.487 0 0 0 4.131-1.869l-1.204-1.204A.25.25 0 0 1 11.104 10h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.001 7.001 0 0 1 1 8Z"/>
-              </svg>
+              <ReloadIcon />
             </button>
             <button onClick={onLogout} className="logout-btn">
               Logout

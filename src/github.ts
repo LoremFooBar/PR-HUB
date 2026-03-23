@@ -1,6 +1,9 @@
 import type { GitHubUser, PullRequestItem, CheckStatus, ReviewStatus } from "./types";
+import { getRepoName } from "./utils/repo";
+import { oneWeekAgo, oneMonthAgo } from "./utils/time";
 
 export type { GitHubUser, PullRequestItem, CheckStatus, ReviewStatus };
+export { getRepoName };
 
 interface SearchResponse {
   items: PullRequestItem[];
@@ -56,18 +59,15 @@ async function enrichPR(
   const repo = getRepoName(pr.repository_url);
 
   try {
-    // Fetch PR details, reviews, commit status, and check-runs in parallel
     const [prRes, reviewsRes] = await Promise.all([
       fetch(`${API}/repos/${repo}/pulls/${pr.number}`, { headers: headers(token) }),
       fetch(`${API}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`, { headers: headers(token) }),
     ]);
 
-    // Reviews: count latest review per user
     let approvalCount = 0;
     let changesRequestedCount = 0;
     if (reviewsRes.ok) {
       const reviews: Review[] = await reviewsRes.json();
-      // Keep only the latest review per user
       const latest = new Map<string, string>();
       for (const review of reviews) {
         if (review.state === "APPROVED" || review.state === "CHANGES_REQUESTED") {
@@ -80,7 +80,6 @@ async function enrichPR(
       }
     }
 
-    // Comments: sum issue comments (from search) + review comments (from PR detail)
     let totalComments = pr.comments ?? 0;
     let commitSha = "";
     let baseRef = "";
@@ -95,7 +94,6 @@ async function enrichPR(
       behind = detail.mergeable_state === "behind";
     }
 
-    // Check status from commit status + check-runs
     let checkStatus: CheckStatus = "pending";
     if (commitSha) {
       const [statusRes, checksRes] = await Promise.all([
@@ -158,7 +156,6 @@ async function enrichReviewPR(
     );
     if (!res.ok) return { ...pr, my_review_status: "PENDING" };
     const reviews: Review[] = await res.json();
-    // Find the latest review by the current user
     let myStatus: ReviewStatus = "PENDING";
     for (const review of reviews) {
       if (review.user.login === username && (review.state === "APPROVED" || review.state === "CHANGES_REQUESTED" || review.state === "COMMENTED")) {
@@ -169,18 +166,6 @@ async function enrichReviewPR(
   } catch {
     return { ...pr, my_review_status: "PENDING" };
   }
-}
-
-function oneWeekAgo(): string {
-  const date = new Date();
-  date.setDate(date.getDate() - 7);
-  return date.toISOString().split("T")[0];
-}
-
-function oneMonthAgo(): string {
-  const date = new Date();
-  date.setMonth(date.getMonth() - 1);
-  return date.toISOString().split("T")[0];
 }
 
 export async function fetchAuthoredPRs(
@@ -201,7 +186,6 @@ export async function fetchReviewPRs(
     searchPRs(token, `type:pr reviewed-by:${username} is:open created:>${since}`),
   ]);
 
-  // Merge and deduplicate
   const seen = new Set<number>();
   const allReviews: PullRequestItem[] = [];
   for (const pr of [...pendingReviews, ...reviewedByMe]) {
@@ -236,8 +220,4 @@ export async function fetchMergedPRs(
   const mergedSince = oneWeekAgo();
   const merged = await searchPRs(token, `type:pr author:${username} is:merged merged:>${mergedSince}`);
   return Promise.all(merged.map((pr) => fetchBaseRef(token, pr)));
-}
-
-export function getRepoName(repositoryUrl: string): string {
-  return repositoryUrl.replace(`${API}/repos/`, "");
 }
