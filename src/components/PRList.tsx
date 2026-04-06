@@ -135,7 +135,7 @@ export default function PRList({ prs, emptyMessage, showAuthor, showChecks, show
               }}
             >
               <div className="pr-item-content">
-                <a href={pr.html_url} onClick={(e) => { e.preventDefault(); openOrFocusTab(pr.html_url); }} className="link">
+                <a href={pr.html_url} onClick={(e) => { e.preventDefault(); e.stopPropagation(); openOrFocusTab(pr.html_url); }} className="link">
                   {pr.title}
                 </a>
 
