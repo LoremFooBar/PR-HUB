@@ -1,4 +1,4 @@
-import { timeAgo, oneWeekAgo, oneMonthAgo } from "../../../src/utils/time";
+import { timeAgo, oneWeekAgo } from "../../../src/utils/time";
 
 describe("timeAgo", () => {
   it("returns 'just now' for dates within the last 60 seconds", () => {
@@ -32,15 +32,6 @@ describe("oneWeekAgo", () => {
     const result = oneWeekAgo();
     const expected = new Date();
     expected.setDate(expected.getDate() - 7);
-    expect(result).toBe(expected.toISOString().split("T")[0]);
-  });
-});
-
-describe("oneMonthAgo", () => {
-  it("returns an ISO date string 1 month before now", () => {
-    const result = oneMonthAgo();
-    const expected = new Date();
-    expected.setMonth(expected.getMonth() - 1);
     expect(result).toBe(expected.toISOString().split("T")[0]);
   });
 });

@@ -196,6 +196,46 @@ body {
   cursor: not-allowed;
 }
 
+/* ── Settings ── */
+.settings-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-fg-muted);
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.settings-actions .btn-primary {
+  margin-top: 0;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-fg-default);
+  background: var(--color-bg-default);
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: var(--color-bg-subtle);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ── Dashboard header ── */
 .header {
   display: flex;
@@ -570,47 +610,6 @@ body {
 
 .pr-stat--danger {
   color: var(--color-danger-fg);
-}
-
-/* ── Review badges ── */
-.review-badge {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 10px;
-  white-space: nowrap;
-}
-
-.review-badge--approved {
-  color: var(--color-success-fg);
-  background: rgba(26, 127, 55, 0.1);
-}
-
-.review-badge--changes {
-  color: var(--color-danger-fg);
-  background: rgba(209, 36, 47, 0.1);
-}
-
-.review-badge--commented {
-  color: var(--color-accent-fg);
-  background: rgba(9, 105, 218, 0.1);
-}
-
-.review-badge--pending {
-  color: var(--color-fg-muted);
-  background: var(--color-bg-subtle);
-}
-
-@media (prefers-color-scheme: dark) {
-  .review-badge--approved {
-    background: rgba(63, 185, 80, 0.15);
-  }
-  .review-badge--changes {
-    background: rgba(248, 81, 73, 0.15);
-  }
-  .review-badge--commented {
-    background: rgba(68, 147, 248, 0.15);
-  }
 }
 
 .pr-meta-row {

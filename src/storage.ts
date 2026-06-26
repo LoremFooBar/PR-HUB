@@ -5,6 +5,9 @@ const storage =
     ? chrome.storage.local
     : null;
 
+// Cached tab data is considered fresh for 30 minutes.
+const CACHE_TTL_MS = 30 * 60 * 1000;
+
 export function getToken(): Promise<string | null> {
   if (!storage) return Promise.resolve(null);
   return new Promise((resolve) =>
@@ -23,6 +26,24 @@ export function removeToken(): Promise<void> {
   if (!storage) return Promise.resolve();
   return new Promise((resolve) =>
     storage.remove("gh_token", () => resolve())
+  );
+}
+
+// --- Settings ---
+
+// Org scope is a persistent preference, kept independently of the auth token
+// and the PR cache so it survives logout.
+export function getOrg(): Promise<string> {
+  if (!storage) return Promise.resolve("");
+  return new Promise((resolve) =>
+    storage.get("gh_org", (result) => resolve(result.gh_org ?? ""))
+  );
+}
+
+export function setOrg(org: string): Promise<void> {
+  if (!storage) return Promise.resolve();
+  return new Promise((resolve) =>
+    storage.set({ gh_org: org }, () => resolve())
   );
 }
 
@@ -54,8 +75,7 @@ export function getCachedTab(tab: string): Promise<PullRequestItem[] | null> {
     storage.get(key, (result) => {
       const entry: CachedTab | undefined = result[key];
       if (!entry) return resolve(null);
-      // Expire cache after 4 hours
-      if (Date.now() - entry.timestamp > 4 * 60 * 60 * 1000) return resolve(null);
+      if (Date.now() - entry.timestamp > CACHE_TTL_MS) return resolve(null);
       resolve(entry.data);
     })
   );
@@ -74,38 +94,45 @@ export function clearCache(): Promise<void> {
   if (!storage) return Promise.resolve();
   return new Promise((resolve) =>
     storage.remove(
-      ["cached_user", "cached_assigned", "cached_reviews", "cached_merged"],
+      ["cached_user", "cached_assigned", "cached_merged"],
       () => resolve()
     )
   );
 }
 
-// Batch read: single chrome.storage call instead of 5 separate ones
+// Invalidates just the per-tab PR caches, leaving the cached user in place.
+export function clearTabCache(): Promise<void> {
+  if (!storage) return Promise.resolve();
+  return new Promise((resolve) =>
+    storage.remove(["cached_assigned", "cached_merged"], () => resolve())
+  );
+}
+
+// Batch read: single chrome.storage call instead of several separate ones.
 export interface InitCache {
   token: string | null;
+  org: string;
   user: GitHubUser | null;
   assigned: PullRequestItem[] | null;
-  reviews: PullRequestItem[] | null;
   merged: PullRequestItem[] | null;
 }
 
 export function getInitCache(): Promise<InitCache> {
-  if (!storage) return Promise.resolve({ token: null, user: null, assigned: null, reviews: null, merged: null });
-  const keys = ["gh_token", "cached_user", "cached_assigned", "cached_reviews", "cached_merged"];
+  if (!storage) return Promise.resolve({ token: null, org: "", user: null, assigned: null, merged: null });
+  const keys = ["gh_token", "gh_org", "cached_user", "cached_assigned", "cached_merged"];
   const now = Date.now();
-  const maxAge = 4 * 60 * 60 * 1000;
   return new Promise((resolve) =>
     storage.get(keys, (result) => {
       const tab = (key: string): PullRequestItem[] | null => {
-        const entry: { data: PullRequestItem[]; timestamp: number } | undefined = result[key];
-        if (!entry || now - entry.timestamp > maxAge) return null;
+        const entry: CachedTab | undefined = result[key];
+        if (!entry || now - entry.timestamp > CACHE_TTL_MS) return null;
         return entry.data;
       };
       resolve({
         token: result.gh_token ?? null,
+        org: result.gh_org ?? "",
         user: result.cached_user ?? null,
         assigned: tab("cached_assigned"),
-        reviews: tab("cached_reviews"),
         merged: tab("cached_merged"),
       });
     })

@@ -1,7 +1,7 @@
 import { getRepoName } from "../github";
 import { openOrFocusTab } from "../tabs";
 import type { PullRequestItem, MergeStatus } from "../types";
-import { PRODUCTION_BRANCHES, reviewLabels, reviewCssClass } from "../constants";
+import { PRODUCTION_BRANCHES } from "../constants";
 import { getMergeStatus } from "../utils/merge-status";
 import { timeAgo } from "../utils/time";
 import { usePRList } from "../hooks/usePRList";
@@ -12,7 +12,6 @@ interface PRListProps {
   emptyMessage: string;
   showAuthor?: boolean;
   showChecks?: boolean;
-  showMyReview?: boolean;
   showMergedBadge?: boolean;
   showBaseBranch?: boolean;
 }
@@ -107,7 +106,7 @@ function PRItemBadge({ mergeStatus, showMergedBadge }: {
   );
 }
 
-export default function PRList({ prs, emptyMessage, showAuthor, showChecks, showMyReview, showMergedBadge, showBaseBranch }: PRListProps) {
+export default function PRList({ prs, emptyMessage, showAuthor, showChecks, showMergedBadge, showBaseBranch }: PRListProps) {
   const { visiblePRs, remainingCount, copiedId, copyToClipboard, showMore } = usePRList(prs);
 
   if (prs.length === 0) {
@@ -153,19 +152,12 @@ export default function PRList({ prs, emptyMessage, showAuthor, showChecks, show
                   </div>
                 )}
 
-                {showAuthor && (
+                {showAuthor && pr.user && (
                   <div className="pr-meta-row">
-                    {pr.user && (
-                      <span className="pr-author">
-                        <img src={pr.user.avatar_url} alt={pr.user.login} className="pr-author-avatar" />
-                        {pr.user.login}
-                      </span>
-                    )}
-                    {showMyReview && pr.my_review_status && (
-                      <span className={`review-badge ${reviewCssClass[pr.my_review_status]}`}>
-                        {reviewLabels[pr.my_review_status]}
-                      </span>
-                    )}
+                    <span className="pr-author">
+                      <img src={pr.user.avatar_url} alt={pr.user.login} className="pr-author-avatar" />
+                      {pr.user.login}
+                    </span>
                   </div>
                 )}
               </div>

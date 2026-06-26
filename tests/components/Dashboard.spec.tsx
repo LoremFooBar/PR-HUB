@@ -23,13 +23,13 @@ function makePR(overrides: Partial<PullRequestItem> = {}): PullRequestItem {
 const defaultProps = {
   user: mockUser,
   assigned: [] as PullRequestItem[],
-  reviews: [] as PullRequestItem[],
   merged: [] as PullRequestItem[],
   isLoadingPRs: false,
   error: "",
   onLogout: () => {},
   onReload: (_tab: Tab) => {},
   onTabChange: (_tab: Tab) => {},
+  onOpenSettings: () => {},
 };
 
 test.describe("Dashboard", () => {
@@ -38,11 +38,11 @@ test.describe("Dashboard", () => {
     await expect(component.getByText("testuser")).toBeVisible();
   });
 
-  test("renders tab bar with My PRs, Reviews, Merged", async ({ mount }) => {
+  test("renders tab bar with My PRs and Merged", async ({ mount }) => {
     const component = await mount(<Dashboard {...defaultProps} />);
     await expect(component.getByText("My PRs")).toBeVisible();
-    await expect(component.getByText("Reviews")).toBeVisible();
     await expect(component.getByText("Merged")).toBeVisible();
+    await expect(component.getByText("Reviews")).toHaveCount(0);
   });
 
   test("shows tab counts", async ({ mount }) => {
@@ -53,18 +53,27 @@ test.describe("Dashboard", () => {
     await expect(component.getByText("My PRs (2)")).toBeVisible();
   });
 
-  test("switches to Reviews tab", async ({ mount }) => {
+  test("switches to Merged tab", async ({ mount }) => {
     let changedTab = "";
     const component = await mount(
       <Dashboard
         {...defaultProps}
-        reviews={[makePR({ my_review_status: "PENDING" })]}
+        merged={[makePR({ base_ref: "main" })]}
         onTabChange={(tab) => { changedTab = tab; }}
       />
     );
-    await component.getByText("Reviews (1)").click();
-    expect(changedTab).toBe("reviews");
-    await expect(component.getByText("Pending review (1)")).toBeVisible();
+    await component.getByText("Merged (1)").click();
+    expect(changedTab).toBe("merged");
+    await expect(component.getByTitle("Merged")).toBeVisible();
+  });
+
+  test("calls onOpenSettings when settings button is clicked", async ({ mount }) => {
+    let opened = false;
+    const component = await mount(
+      <Dashboard {...defaultProps} onOpenSettings={() => { opened = true; }} />
+    );
+    await component.getByTitle("Settings").click();
+    expect(opened).toBe(true);
   });
 
   test("shows loading skeleton when isLoadingPRs is true", async ({ mount }) => {

@@ -1,16 +1,16 @@
 # PR Hub
 
-Chrome extension that shows your open pull requests, review requests, merged PRs, CI status, and base branches — with GitHub Primer theming and auto dark mode.
+Chrome extension that shows your open pull requests, merged PRs, CI status, and base branches — with GitHub Primer theming and auto dark mode.
 
 ## Features
 
 - **My PRs tab** — Open pull requests with CI check status, comment count, approvals, change requests, and merge readiness badge
-- **Reviews tab** — Pending reviews at the top, already-reviewed PRs at the bottom, with your review status badge
 - **Merged tab** — Recently merged PRs (last week) with base branch info
+- **Organization scope** — Settings screen to limit PRs to a single org (leave blank for all)
 - **Copy actions** — Hover any PR to copy its branch name or URL
 - **Production branch warnings** — Visual indicator when a PR targets `main` or `master`
 - **GitHub Primer theme** — Light and dark mode that follows your OS setting
-- **Cache-first loading** — Cached data shown instantly, revalidated in background
+- **30-minute cache** — Cached data is shown instantly; click refresh to invalidate and refetch
 - **Skeleton loading** — Smooth loading placeholders instead of blank screens
 - **Pagination** — 10 PRs at a time with "Show more"
 
@@ -34,8 +34,8 @@ Go to [Settings > Developer settings > Personal access tokens > Tokens (classic)
 ### 2. Install the extension
 
 ```bash
-git clone https://github.com/Lalg28/github-pr-check.git
-cd github-pr-check
+git clone https://github.com/LoremFooBar/PR-HUB.git
+cd PR-HUB
 npm install
 npm run build
 ```
@@ -49,6 +49,10 @@ Then load it in Chrome:
 ### 3. Login
 
 Click the extension icon, paste your Classic PAT, and you're in.
+
+### 4. (Optional) Scope to an organization
+
+Click the gear icon in the header and enter an org login to show only that org's PRs. Leave it blank to show PRs from everywhere.
 
 ## Development
 
@@ -68,7 +72,7 @@ After building, go to `chrome://extensions` and click the reload button on the e
 - **Vite 6** for bundling
 - **CSS custom properties** with GitHub Primer color tokens
 - **Chrome Extension Manifest V3**
-- **GitHub REST API** (Search, Pulls, Reviews, Check Runs)
+- **GitHub REST API** (Search, Pulls, Check Runs)
 - **Jest** + **SWC** for unit tests
 - **Playwright** for component tests
 

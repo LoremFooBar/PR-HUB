@@ -93,15 +93,4 @@ test.describe("PRList", () => {
     );
     await expect(component.getByText("main")).toBeVisible();
   });
-
-  test("shows review status when showMyReview is true", async ({ mount }) => {
-    const prs = [makePR({
-      user: { login: "octocat", avatar_url: "https://avatar.url" },
-      my_review_status: "APPROVED",
-    })];
-    const component = await mount(
-      <PRList prs={prs} emptyMessage="" showAuthor showMyReview />
-    );
-    await expect(component.getByText("Approved")).toBeVisible();
-  });
 });

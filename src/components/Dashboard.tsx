@@ -3,25 +3,22 @@ import type { GitHubUser, PullRequestItem, Tab } from "../types";
 import { openOrFocusTab } from "../tabs";
 import PRList from "./PRList";
 import { PRListSkeleton } from "./Skeleton";
-import { ReloadIcon } from "./Icons";
+import { ReloadIcon, SettingsIcon } from "./Icons";
 
 interface DashboardProps {
   user: GitHubUser;
   assigned: PullRequestItem[];
-  reviews: PullRequestItem[];
   merged: PullRequestItem[];
   isLoadingPRs: boolean;
   error: string;
   onLogout(): void;
   onReload(currentTab: Tab): void;
   onTabChange(tab: Tab): void;
+  onOpenSettings(): void;
 }
 
-export default function Dashboard({ user, assigned, reviews, merged, isLoadingPRs, error, onLogout, onReload, onTabChange }: DashboardProps) {
+export default function Dashboard({ user, assigned, merged, isLoadingPRs, error, onLogout, onReload, onTabChange, onOpenSettings }: DashboardProps) {
   const [tab, setTab] = useState<Tab>("assigned");
-
-  const pendingReviews = reviews.filter((pr) => pr.my_review_status === "PENDING");
-  const reviewedPRs = reviews.filter((pr) => pr.my_review_status && pr.my_review_status !== "PENDING");
 
   return (
     <div className="dashboard">
@@ -42,6 +39,9 @@ export default function Dashboard({ user, assigned, reviews, merged, isLoadingPR
             <button onClick={() => onReload(tab)} className="reload-btn" disabled={isLoadingPRs} title="Reload">
               <ReloadIcon />
             </button>
+            <button onClick={onOpenSettings} className="reload-btn" title="Settings">
+              <SettingsIcon />
+            </button>
             <button onClick={onLogout} className="logout-btn">
               Logout
             </button>
@@ -49,15 +49,9 @@ export default function Dashboard({ user, assigned, reviews, merged, isLoadingPR
         </div>
 
         <div className="tab-bar">
-          {(["assigned", "reviews", "merged"] as Tab[]).map((tabKey) => {
-            const count =
-              tabKey === "assigned" ? assigned.length
-              : tabKey === "reviews" ? reviews.length
-              : merged.length;
-            const name =
-              tabKey === "assigned" ? "My PRs"
-              : tabKey === "reviews" ? "Reviews"
-              : "Merged";
+          {(["assigned", "merged"] as Tab[]).map((tabKey) => {
+            const count = tabKey === "assigned" ? assigned.length : merged.length;
+            const name = tabKey === "assigned" ? "My PRs" : "Merged";
             const label = count > 0 ? `${name} (${count})` : name;
             return (
               <button
@@ -84,27 +78,6 @@ export default function Dashboard({ user, assigned, reviews, merged, isLoadingPR
             showChecks
             showBaseBranch
           />
-        ) : tab === "reviews" ? (
-          <>
-            <h3 className="section-heading">Pending review ({pendingReviews.length})</h3>
-            <PRList
-              prs={pendingReviews}
-              emptyMessage="No pending reviews."
-              showAuthor
-              showMyReview
-            />
-            {reviewedPRs.length > 0 && (
-              <>
-                <h3 className="section-heading section-heading--spaced">Reviewed ({reviewedPRs.length})</h3>
-                <PRList
-                  prs={reviewedPRs}
-                  emptyMessage=""
-                  showAuthor
-                  showMyReview
-                />
-              </>
-            )}
-          </>
         ) : (
           <PRList
             prs={merged}

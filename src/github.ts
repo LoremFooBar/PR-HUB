@@ -1,8 +1,8 @@
-import type { GitHubUser, PullRequestItem, CheckStatus, ReviewStatus } from "./types";
+import type { GitHubUser, PullRequestItem, CheckStatus } from "./types";
 import { getRepoName } from "./utils/repo";
-import { oneWeekAgo, oneMonthAgo } from "./utils/time";
+import { oneWeekAgo } from "./utils/time";
 
-export type { GitHubUser, PullRequestItem, CheckStatus, ReviewStatus };
+export type { GitHubUser, PullRequestItem, CheckStatus };
 export { getRepoName };
 
 interface SearchResponse {
@@ -34,6 +34,11 @@ function headers(token: string) {
     Authorization: `Bearer ${token}`,
     Accept: "application/vnd.github+json",
   };
+}
+
+// Appends an `org:` qualifier to a search query when an org scope is set.
+function scoped(query: string, org?: string): string {
+  return org ? `${query} org:${org}` : query;
 }
 
 export async function validateToken(token: string): Promise<GitHubUser> {
@@ -143,59 +148,13 @@ async function enrichPR(
   }
 }
 
-async function enrichReviewPR(
-  token: string,
-  pr: PullRequestItem,
-  username: string,
-): Promise<PullRequestItem> {
-  const repo = getRepoName(pr.repository_url);
-  try {
-    const res = await fetch(
-      `${API}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`,
-      { headers: headers(token) },
-    );
-    if (!res.ok) return { ...pr, my_review_status: "PENDING" };
-    const reviews: Review[] = await res.json();
-    let myStatus: ReviewStatus = "PENDING";
-    for (const review of reviews) {
-      if (review.user.login === username && (review.state === "APPROVED" || review.state === "CHANGES_REQUESTED" || review.state === "COMMENTED")) {
-        myStatus = review.state as ReviewStatus;
-      }
-    }
-    return { ...pr, my_review_status: myStatus };
-  } catch {
-    return { ...pr, my_review_status: "PENDING" };
-  }
-}
-
 export async function fetchAuthoredPRs(
   token: string,
   username: string,
+  org?: string,
 ): Promise<PullRequestItem[]> {
-  const authored = await searchPRs(token, `type:pr author:${username} is:open`);
+  const authored = await searchPRs(token, scoped(`type:pr author:${username} is:open`, org));
   return Promise.all(authored.map((pr) => enrichPR(token, pr)));
-}
-
-export async function fetchReviewPRs(
-  token: string,
-  username: string,
-): Promise<PullRequestItem[]> {
-  const since = oneMonthAgo();
-  const [pendingReviews, reviewedByMe] = await Promise.all([
-    searchPRs(token, `type:pr review-requested:${username} is:open created:>${since}`),
-    searchPRs(token, `type:pr reviewed-by:${username} is:open created:>${since}`),
-  ]);
-
-  const seen = new Set<number>();
-  const allReviews: PullRequestItem[] = [];
-  for (const pr of [...pendingReviews, ...reviewedByMe]) {
-    if (!seen.has(pr.id)) {
-      seen.add(pr.id);
-      allReviews.push(pr);
-    }
-  }
-
-  return Promise.all(allReviews.map((pr) => enrichReviewPR(token, pr, username)));
 }
 
 async function fetchBaseRef(
@@ -216,8 +175,9 @@ async function fetchBaseRef(
 export async function fetchMergedPRs(
   token: string,
   username: string,
+  org?: string,
 ): Promise<PullRequestItem[]> {
   const mergedSince = oneWeekAgo();
-  const merged = await searchPRs(token, `type:pr author:${username} is:merged merged:>${mergedSince}`);
+  const merged = await searchPRs(token, scoped(`type:pr author:${username} is:merged merged:>${mergedSince}`, org));
   return Promise.all(merged.map((pr) => fetchBaseRef(token, pr)));
 }
