@@ -8,6 +8,8 @@
 html,
 body {
   scrollbar-width: none;
+  /* The popup itself must not scroll — only .dashboard-scroll does. */
+  overflow: hidden;
 }
 
 html::-webkit-scrollbar,
@@ -23,7 +25,6 @@ body {
   line-height: 1.5;
   color: var(--color-fg-default);
   background: var(--color-bg-default);
-  overflow-y: scroll;
 }
 
 /* ── Primer light tokens ── */
