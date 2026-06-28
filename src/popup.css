@@ -73,8 +73,10 @@ body {
   display: flex;
   flex-direction: column;
   width: 500px;
-  max-height: 600px;
-  /* Confine all scrolling to .dashboard-scroll. */
+  /* Fixed height (not max-height) so the popup is a stable size and the
+     header stays pinned regardless of how Chrome auto-sizes the popup.
+     All scrolling is confined to .dashboard-scroll. */
+  height: 600px;
   overflow: hidden;
 }
 
