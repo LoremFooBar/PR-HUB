@@ -149,7 +149,9 @@ export function useApp() {
           .then((ghUser) => {
             setUser(ghUser);
             setCachedUser(ghUser);
-            // Non-forced: only fetches tabs whose cache was missing or expired.
+            // PRs are not refetched on open — the background alarm keeps the
+            // cache warm. This only fetches a tab we've never cached at all
+            // (fresh install / cleared cache).
             loadTab("assigned", cache.token!, ghUser.login);
             prefetchOtherTabs("assigned", cache.token!, ghUser.login);
           })
@@ -171,6 +173,30 @@ export function useApp() {
       }
     }
     init();
+  }, []);
+
+  // The background service worker refreshes the tab caches every 30 minutes.
+  // Reflect those updates live if the panel is open when a refresh lands.
+  useEffect(() => {
+    if (typeof chrome === "undefined" || !chrome.storage?.onChanged) return;
+    const listener = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      area: string
+    ) => {
+      if (area !== "local") return;
+      const assignedChange = changes.cached_assigned?.newValue;
+      if (assignedChange) {
+        setAssigned(assignedChange.data);
+        loadedTabsRef.current.add("assigned");
+      }
+      const mergedChange = changes.cached_merged?.newValue;
+      if (mergedChange) {
+        setMerged(mergedChange.data);
+        loadedTabsRef.current.add("merged");
+      }
+    };
+    chrome.storage.onChanged.addListener(listener);
+    return () => chrome.storage.onChanged.removeListener(listener);
   }, []);
 
   return {

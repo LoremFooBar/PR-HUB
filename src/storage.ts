@@ -120,13 +120,13 @@ export interface InitCache {
 export function getInitCache(): Promise<InitCache> {
   if (!storage) return Promise.resolve({ token: null, org: "", user: null, assigned: null, merged: null });
   const keys = ["gh_token", "gh_org", "cached_user", "cached_assigned", "cached_merged"];
-  const now = Date.now();
   return new Promise((resolve) =>
     storage.get(keys, (result) => {
+      // On open we always show whatever is cached, regardless of age — the
+      // background alarm keeps the cache fresh, so we never block on a fetch.
       const tab = (key: string): PullRequestItem[] | null => {
         const entry: CachedTab | undefined = result[key];
-        if (!entry || now - entry.timestamp > CACHE_TTL_MS) return null;
-        return entry.data;
+        return entry ? entry.data : null;
       };
       resolve({
         token: result.gh_token ?? null,

@@ -65,18 +65,17 @@ body {
 
 /* ── Layout ── */
 .container {
-  width: 500px;
+  width: 100%;
   padding: 16px;
 }
 
 .dashboard {
   display: flex;
   flex-direction: column;
-  width: 500px;
-  /* Fixed height (not max-height) so the popup is a stable size and the
-     header stays pinned regardless of how Chrome auto-sizes the popup.
-     All scrolling is confined to .dashboard-scroll. */
-  height: 600px;
+  width: 100%;
+  /* Fill the side panel and let the user resize it. The header stays pinned
+     and all scrolling is confined to .dashboard-scroll. */
+  height: 100vh;
   overflow: hidden;
 }
 

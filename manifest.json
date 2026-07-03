@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PR Hub",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "View your open PRs, review requests, merged PRs, CI status, and base branches with GitHub Primer theming.",
   "icons": {
     "16": "icons/icon16.png",
@@ -9,7 +9,6 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_popup": "popup.html",
     "default_title": "PR Hub",
     "default_icon": {
       "16": "icons/icon16.png",
@@ -17,5 +16,12 @@
       "128": "icons/icon128.png"
     }
   },
-  "permissions": ["storage", "tabs"]
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["storage", "tabs", "sidePanel", "alarms"]
 }
