@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { GitHubUser, PullRequestItem, Tab } from "../types";
-import { openOrFocusTab } from "../tabs";
+import { openOrFocusTab, syncPRTabGroup } from "../tabs";
 import PRList from "./PRList";
 import { PRListSkeleton } from "./Skeleton";
-import { ReloadIcon, SettingsIcon } from "./Icons";
+import { OpenTabsIcon, ReloadIcon, SettingsIcon } from "./Icons";
 
 interface DashboardProps {
   user: GitHubUser;
@@ -36,6 +36,14 @@ export default function Dashboard({ user, assigned, merged, isLoadingPRs, error,
             <span className="header-username">{user.login}</span>
           </a>
           <div className="header-actions">
+            <button
+              onClick={() => syncPRTabGroup(assigned.map((pr) => pr.html_url))}
+              className="reload-btn"
+              disabled={assigned.length === 0}
+              title="Open my open PRs in a tab group"
+            >
+              <OpenTabsIcon />
+            </button>
             <button onClick={() => onReload(tab)} className="reload-btn" disabled={isLoadingPRs} title="Reload">
               <ReloadIcon />
             </button>

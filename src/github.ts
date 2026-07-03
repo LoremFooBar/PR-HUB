@@ -41,6 +41,11 @@ function scoped(query: string, org?: string): string {
   return org ? `${query} org:${org}` : query;
 }
 
+// Alphabetical by title, case-insensitive, so lists have a stable order.
+function byTitle(a: PullRequestItem, b: PullRequestItem): number {
+  return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+}
+
 export async function validateToken(token: string): Promise<GitHubUser> {
   const res = await fetch(`${API}/user`, { headers: headers(token) });
   if (!res.ok) throw new Error("Invalid token");
@@ -154,7 +159,8 @@ export async function fetchAuthoredPRs(
   org?: string,
 ): Promise<PullRequestItem[]> {
   const authored = await searchPRs(token, scoped(`type:pr author:${username} is:open`, org));
-  return Promise.all(authored.map((pr) => enrichPR(token, pr)));
+  const enriched = await Promise.all(authored.map((pr) => enrichPR(token, pr)));
+  return enriched.sort(byTitle);
 }
 
 async function fetchBaseRef(
@@ -179,5 +185,6 @@ export async function fetchMergedPRs(
 ): Promise<PullRequestItem[]> {
   const mergedSince = oneWeekAgo();
   const merged = await searchPRs(token, scoped(`type:pr author:${username} is:merged merged:>${mergedSince}`, org));
-  return Promise.all(merged.map((pr) => fetchBaseRef(token, pr)));
+  const withBase = await Promise.all(merged.map((pr) => fetchBaseRef(token, pr)));
+  return withBase.sort(byTitle);
 }

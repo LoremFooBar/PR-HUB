@@ -52,6 +52,10 @@ export function WarningIcon(props: IconProps) {
   return <Icon {...props} d="M8.22 1.754a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm-1.763-.707c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-.25-5.25a.75.75 0 0 0-1.5 0v2.5a.75.75 0 0 0 1.5 0Z" />;
 }
 
+export function OpenTabsIcon(props: IconProps) {
+  return <Icon {...props} d="M0 2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 14.25 15H1.75A1.75 1.75 0 0 1 0 13.25Zm1.75-.25a.25.25 0 0 0-.25.25V5h13V2.75a.25.25 0 0 0-.25-.25ZM14.5 6.5h-13v6.75c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25Z" />;
+}
+
 export function SettingsIcon(props: IconProps) {
   return (
     <MultiPathIcon {...props} paths={[

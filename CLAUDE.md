@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is this?
 
-PR Hub is a Chrome Extension (Manifest V3) that shows a user's open and recently-merged GitHub pull requests and CI status in a popup, optionally scoped to a single organization. It uses GitHub's REST API with a Classic Personal Access Token (`ghp_`). Styled with GitHub Primer design tokens and supports auto light/dark mode via `prefers-color-scheme`.
+PR Hub is a Chrome Extension (Manifest V3) that shows a user's open and recently-merged GitHub pull requests and CI status in a side panel, optionally scoped to a single organization. It uses GitHub's REST API with a Classic Personal Access Token (`ghp_`). Styled with GitHub Primer design tokens and supports auto light/dark mode via `prefers-color-scheme`.
 
 ## Commands
 
@@ -21,7 +21,7 @@ After building, load `dist/` as an unpacked extension in `chrome://extensions`.
 
 **Data flow:** The `useApp` hook holds all top-level state (token, user, org scope, PRs). Each tab is loaded on demand and prefetched in the background: "My PRs" via `fetchAuthoredPRs` and "Merged" via `fetchMergedPRs`. Open PRs are enriched with details (comments, check status, approval counts) via parallel API calls. When an org scope is set, an `org:{org}` qualifier is appended to the search queries.
 
-**Caching:** Per-tab results are cached in `chrome.storage.local` for 30 minutes. On popup open, fresh cache is shown immediately and those tabs are not refetched; only missing/expired tabs hit the network. The refresh button invalidates the tab cache and force-refetches.
+**Caching & background refresh:** Per-tab results are cached in `chrome.storage.local`. A background service worker (`src/background.ts`) refreshes both tabs every 30 minutes via `chrome.alarms` (plus once on install/startup). On panel open the cache is shown immediately regardless of age and PRs are **not** refetched — only a tab that has never been cached hits the network. Background refreshes stream into an open panel via a `chrome.storage.onChanged` listener in `useApp`. The refresh button still force-refetches on demand.
 
 **Key modules:**
 - `src/github.ts` — All GitHub API interaction. Org-scoped search, enrichment (PR details + reviews + commit status + check-runs), and approval-count detection. Re-exports types from `types.ts`.
@@ -30,7 +30,7 @@ After building, load `dist/` as an unpacked extension in `chrome://extensions`.
 
 **Components:**
 - `LoginScreen` — PAT input with `ghp_` prefix validation and scope badges.
-- `Dashboard` — Header (profile link, reload, settings gear, logout) + tab bar ("My PRs" / "Merged") + scrollable PR list.
+- `Dashboard` — Header (profile link, open-in-tab-group, reload, settings gear, logout) + tab bar ("My PRs" / "Merged") + scrollable PR list. PRs are sorted alphabetically by title (in `github.ts`). The tab-group button calls `syncPRTabGroup` (`src/tabs.ts`), which opens all open PRs in a "My PRs" tab group and re-syncs it (closes stale tabs, opens missing ones) on each press.
 - `Settings` — Org scope screen: free-text org login (blank = all orgs), Save/Cancel.
 - `PRList` — Reusable paginated list (10 per page). Conditionally renders check badges, author info, and comment/approval counts based on props.
 - `Skeleton` — Loading placeholders (`DashboardSkeleton` for initial load, `PRListSkeleton` for reload).
