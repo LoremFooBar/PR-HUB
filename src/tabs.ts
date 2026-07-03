@@ -2,7 +2,8 @@ const PR_GROUP_TITLE = "My PRs";
 
 // Opens every given PR URL in a single tab group and keeps that group in sync:
 // tabs for PRs that are no longer open are closed, missing PRs are opened, and
-// the result is (re)grouped under one collapsible "My PRs" group.
+// the result is (re)grouped under one collapsible "My PRs" group. Tabs are
+// ordered to match `urls` (the alphabetical-by-title PR list order).
 export async function syncPRTabGroup(urls: string[]): Promise<void> {
   if (typeof chrome === "undefined" || !chrome.tabs || !chrome.tabGroups) {
     urls.forEach((url) => window.open(url, "_blank"));
@@ -14,15 +15,19 @@ export async function syncPRTabGroup(urls: string[]): Promise<void> {
 
   const [existingGroup] = await chrome.tabGroups.query({ title: PR_GROUP_TITLE, windowId });
 
-  const keptTabIds: number[] = [];
+  const tabIdByUrl = new Map<string, number>();
+  const toCreate = new Set(urls);
+  let keptCount = 0;
+
   if (existingGroup) {
     const groupTabs = await chrome.tabs.query({ groupId: existingGroup.id });
     const staleTabIds: number[] = [];
     for (const t of groupTabs) {
       if (t.id == null) continue;
       if (t.url && desired.has(t.url)) {
-        keptTabIds.push(t.id);
-        desired.delete(t.url); // already open — don't create a duplicate
+        tabIdByUrl.set(t.url, t.id);
+        toCreate.delete(t.url); // already open — don't create a duplicate
+        keptCount++;
       } else {
         staleTabIds.push(t.id);
       }
@@ -30,22 +35,30 @@ export async function syncPRTabGroup(urls: string[]): Promise<void> {
     if (staleTabIds.length) await chrome.tabs.remove(staleTabIds);
   }
 
-  const newTabIds: number[] = [];
-  for (const url of desired) {
+  for (const url of toCreate) {
     const tab = await chrome.tabs.create({ url, active: false, windowId });
-    if (tab.id != null) newTabIds.push(tab.id);
+    if (tab.id != null) tabIdByUrl.set(url, tab.id);
   }
 
-  const tabIds = [...keptTabIds, ...newTabIds];
-  if (tabIds.length === 0) return; // no open PRs — nothing to group
+  // Tab ids in the same order as the PR list (which is sorted by title).
+  const orderedTabIds = urls
+    .map((url) => tabIdByUrl.get(url))
+    .filter((id): id is number => id != null);
+  if (orderedTabIds.length === 0) return; // no open PRs — nothing to group
 
   // Reuse the existing group only if it still has tabs (an emptied group is
   // auto-dissolved by Chrome, so its id would no longer be valid).
-  const reuse = existingGroup && keptTabIds.length > 0;
+  const reuse = existingGroup && keptCount > 0;
   const groupId = await chrome.tabs.group(
-    reuse ? { groupId: existingGroup.id, tabIds } : { tabIds }
+    reuse ? { groupId: existingGroup.id, tabIds: orderedTabIds } : { tabIds: orderedTabIds }
   );
   await chrome.tabGroups.update(groupId, { title: PR_GROUP_TITLE, color: "blue" });
+
+  // Grouping doesn't guarantee tab-strip order, so lay the tabs out to match
+  // the list: move them, in order, to the group's current start position.
+  const grouped = await chrome.tabs.query({ groupId });
+  const startIndex = Math.min(...grouped.map((t) => t.index));
+  await chrome.tabs.move(orderedTabIds, { index: startIndex });
 }
 
 export function openOrFocusTab(url: string) {
