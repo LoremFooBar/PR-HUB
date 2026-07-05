@@ -1,8 +1,10 @@
 import { fetchAuthoredPRs, fetchMergedPRs } from "./github";
-import { getToken, getOrg, getCachedUser, setCachedTab } from "./storage";
+import { getToken, getOrg, getCachedUser, getCachedTab, setCachedTab } from "./storage";
+import { syncPRTabGroup } from "./tabs";
 
 const REFRESH_ALARM = "refresh-prs";
 const REFRESH_PERIOD_MIN = 30;
+const SYNC_TABS_COMMAND = "sync-pr-tabs";
 
 // Refetch both tabs and update the cache. The open panel picks these up live
 // via chrome.storage.onChanged, so the user never waits on a fetch when opening.
@@ -43,6 +45,15 @@ chrome.runtime.onStartup.addListener(() => {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === REFRESH_ALARM) refreshPRs();
+});
+
+// Keyboard shortcut (see manifest `commands`) syncs the "My PRs" tab group from
+// the cached open PRs, so it works even when the side panel is closed.
+chrome.commands?.onCommand.addListener(async (command) => {
+  if (command !== SYNC_TABS_COMMAND) return;
+  const assigned = await getCachedTab("assigned");
+  if (!assigned || assigned.length === 0) return;
+  await syncPRTabGroup(assigned.map((pr) => pr.html_url));
 });
 
 // Clicking the toolbar icon opens the side panel instead of a popup.
