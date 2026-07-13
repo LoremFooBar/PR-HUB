@@ -30,7 +30,8 @@ After building, load `dist/` as an unpacked extension in `chrome://extensions`.
 
 **Components:**
 - `LoginScreen` — PAT input with `ghp_` prefix validation and scope badges.
-- `Dashboard` — Header (profile link, open-in-tab-group, reload, settings gear, logout) + tab bar ("My PRs" / "Merged") + scrollable PR list. PRs are sorted alphabetically by title (in `github.ts`). The tab-group button calls `syncPRTabGroup` (`src/tabs.ts`), which opens all open PRs in a "My PRs" tab group and re-syncs it (closes stale tabs, opens missing ones) on each press.
+- `Dashboard` — Header (profile link, open-in-tab-group, reload, settings gear, logout) + tab bar ("My PRs" / "Merged") + search bar + scrollable PR list. PRs are sorted alphabetically by title (in `github.ts`). The tab-group button calls `syncPRTabGroup` (`src/tabs.ts`), which opens all open PRs in a "My PRs" tab group and re-syncs it (closes stale tabs, opens missing ones) on each press.
+- `SearchBar` — Client-side filter for the active tab. Its query is applied via the pure `filterPRs` (`src/utils/search.ts`, token-AND substring over title/repo/branch/author) memoized in `Dashboard`. Ephemeral (not persisted); `/` focuses, `Esc` clears.
 - `Settings` — Org scope screen: free-text org login (blank = all orgs), Save/Cancel.
 - `PRList` — Reusable paginated list (10 per page). Conditionally renders check badges, author info, and comment/approval counts based on props.
 - `Skeleton` — Loading placeholders (`DashboardSkeleton` for initial load, `PRListSkeleton` for reload).

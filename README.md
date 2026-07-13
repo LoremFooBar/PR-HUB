@@ -6,6 +6,7 @@ Chrome extension that shows your open pull requests, merged PRs, CI status, and 
 
 - **My PRs tab** — Open pull requests with CI check status, comment count, approvals, change requests, and merge readiness badge
 - **Merged tab** — Recently merged PRs (last week) with base branch info
+- **Filter/search** — Type to filter the active tab by title, repo, branch, or author (`/` to focus, `Esc` to clear); great for jumping to a ticket like `PLA-252`
 - **Organization scope** — Settings screen to limit PRs to a single org (leave blank for all)
 - **Copy actions** — Hover any PR to copy its branch name or URL
 - **Production branch warnings** — Visual indicator when a PR targets `main` or `master`
