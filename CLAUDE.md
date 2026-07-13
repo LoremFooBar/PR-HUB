@@ -21,7 +21,7 @@ After building, load `dist/` as an unpacked extension in `chrome://extensions`.
 
 **Data flow:** The `useApp` hook holds all top-level state (token, user, org scope, PRs). Each tab is loaded on demand and prefetched in the background: "My PRs" via `fetchAuthoredPRs` and "Merged" via `fetchMergedPRs`. Open PRs are enriched with details (comments, check status, approval counts) via parallel API calls. When an org scope is set, an `org:{org}` qualifier is appended to the search queries.
 
-**Caching & background refresh:** Per-tab results are cached in `chrome.storage.local`. A background service worker (`src/background.ts`) refreshes both tabs every 30 minutes via `chrome.alarms` (plus once on install/startup). On panel open the cache is shown immediately regardless of age and PRs are **not** refetched — only a tab that has never been cached hits the network. Background refreshes stream into an open panel via a `chrome.storage.onChanged` listener in `useApp`. The refresh button still force-refetches on demand.
+**Caching & background refresh:** Per-tab results are cached in `chrome.storage.local`. A background service worker (`src/background.ts`) refreshes both tabs every 30 minutes via `chrome.alarms` (plus once on install/startup). On panel open the cache is shown immediately regardless of age and PRs are **not** refetched — only a tab that has never been cached hits the network. Background refreshes stream into an open panel via a `chrome.storage.onChanged` listener in `useApp`. The refresh button still force-refetches on demand. After each background refresh the "My PRs" tab group is gently re-synced (`syncPRTabGroup` with `gentle: true`): only if the group already exists, never closing the active tab, and without reordering. "Stray" tabs (repurposed to non-PR URLs) are never closed in either sync mode; a setting (`stray_tab_action`) decides whether they're moved out of the group (default) or left in it.
 
 **Key modules:**
 - `src/github.ts` — All GitHub API interaction. Org-scoped search, enrichment (PR details + reviews + commit status + check-runs), and approval-count detection. Re-exports types from `types.ts`.
@@ -32,7 +32,7 @@ After building, load `dist/` as an unpacked extension in `chrome://extensions`.
 - `LoginScreen` — PAT input with `ghp_` prefix validation and scope badges.
 - `Dashboard` — Header (profile link, open-in-tab-group, reload, settings gear, logout) + tab bar ("My PRs" / "Merged") + search bar + scrollable PR list. PRs are sorted alphabetically by title (in `github.ts`). The tab-group button calls `syncPRTabGroup` (`src/tabs.ts`), which opens all open PRs in a "My PRs" tab group and re-syncs it (closes stale tabs, opens missing ones) on each press.
 - `SearchBar` — Client-side filter for the active tab. Its query is applied via the pure `filterPRs` (`src/utils/search.ts`, token-AND substring over title/repo/branch/author) memoized in `Dashboard`. Ephemeral (not persisted); `/` focuses, `Esc` clears.
-- `Settings` — Org scope screen: free-text org login (blank = all orgs), Save/Cancel.
+- `Settings` — Org scope (free-text org login, blank = all orgs), the stray-tab action (move out of group / leave in group), and the tab-group color (Chrome's fixed palette, default blue), Save/Cancel.
 - `PRList` — Reusable paginated list (10 per page). Conditionally renders check badges, author info, and comment/approval counts based on props.
 - `Skeleton` — Loading placeholders (`DashboardSkeleton` for initial load, `PRListSkeleton` for reload).
 

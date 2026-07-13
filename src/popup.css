@@ -212,6 +212,60 @@ body {
   color: var(--color-fg-muted);
 }
 
+.settings-label + .input {
+  margin-bottom: 16px;
+}
+
+.settings-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--color-fg-muted);
+}
+
+.settings-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.settings-color-row {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-color-swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.settings-color-swatch.selected {
+  border-color: var(--color-fg-default);
+}
+
+/* Chrome's tab-group palette (approximate, fixed by the browser). */
+.swatch-grey   { background: #5f6368; }
+.swatch-blue   { background: #1a73e8; }
+.swatch-red    { background: #d93025; }
+.swatch-yellow { background: #f9ab00; }
+.swatch-green  { background: #188038; }
+.swatch-pink   { background: #d01884; }
+.swatch-purple { background: #a142f4; }
+.swatch-cyan   { background: #007b83; }
+.swatch-orange { background: #fa903e; }
+
+.settings-radio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
 .settings-actions {
   display: flex;
   gap: 8px;

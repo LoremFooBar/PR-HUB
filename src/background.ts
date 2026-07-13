@@ -24,6 +24,13 @@ async function refreshPRs() {
       setCachedTab("assigned", assigned),
       setCachedTab("merged", merged),
     ]);
+    // Keep the "My PRs" tab group current with the fresh data. Gentle: only
+    // if the group already exists, and without closing the active tab,
+    // repurposed tabs, or reordering — see syncPRTabGroup.
+    await syncPRTabGroup(
+      assigned.map((pr) => pr.html_url),
+      { gentle: true }
+    );
   } catch {
     // Leave the existing cache untouched on failure.
   }

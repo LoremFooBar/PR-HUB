@@ -10,6 +10,8 @@ export default function App() {
     token,
     user,
     org,
+    strayTabAction,
+    groupColor,
     assigned,
     merged,
     error,
@@ -33,7 +35,15 @@ export default function App() {
   }
 
   if (showSettings) {
-    return <Settings org={org} onSave={saveSettings} onCancel={closeSettings} />;
+    return (
+      <Settings
+        org={org}
+        strayTabAction={strayTabAction}
+        groupColor={groupColor}
+        onSave={saveSettings}
+        onCancel={closeSettings}
+      />
+    );
   }
 
   return (

@@ -47,6 +47,55 @@ export function setOrg(org: string): Promise<void> {
   );
 }
 
+// What tab-group sync does with a "stray" tab — one in the "My PRs" group the
+// user navigated to a non-PR URL. Never closed; either moved out of the group
+// or left in it.
+export type StrayTabAction = "ungroup" | "keep";
+
+export function getStrayTabAction(): Promise<StrayTabAction> {
+  if (!storage) return Promise.resolve("ungroup");
+  return new Promise((resolve) =>
+    storage.get("stray_tab_action", (result) =>
+      resolve(result.stray_tab_action ?? "ungroup")
+    )
+  );
+}
+
+export function setStrayTabAction(action: StrayTabAction): Promise<void> {
+  if (!storage) return Promise.resolve();
+  return new Promise((resolve) =>
+    storage.set({ stray_tab_action: action }, () => resolve())
+  );
+}
+
+// Chrome's fixed tab-group color palette (chrome.tabGroups.ColorEnum).
+export const GROUP_COLORS = [
+  "grey",
+  "blue",
+  "red",
+  "yellow",
+  "green",
+  "pink",
+  "purple",
+  "cyan",
+  "orange",
+] as const;
+export type GroupColor = (typeof GROUP_COLORS)[number];
+
+export function getGroupColor(): Promise<GroupColor> {
+  if (!storage) return Promise.resolve("blue");
+  return new Promise((resolve) =>
+    storage.get("group_color", (result) => resolve(result.group_color ?? "blue"))
+  );
+}
+
+export function setGroupColor(color: GroupColor): Promise<void> {
+  if (!storage) return Promise.resolve();
+  return new Promise((resolve) =>
+    storage.set({ group_color: color }, () => resolve())
+  );
+}
+
 // --- Caching ---
 
 interface CachedTab {
@@ -112,14 +161,16 @@ export function clearTabCache(): Promise<void> {
 export interface InitCache {
   token: string | null;
   org: string;
+  strayTabAction: StrayTabAction;
+  groupColor: GroupColor;
   user: GitHubUser | null;
   assigned: PullRequestItem[] | null;
   merged: PullRequestItem[] | null;
 }
 
 export function getInitCache(): Promise<InitCache> {
-  if (!storage) return Promise.resolve({ token: null, org: "", user: null, assigned: null, merged: null });
-  const keys = ["gh_token", "gh_org", "cached_user", "cached_assigned", "cached_merged"];
+  if (!storage) return Promise.resolve({ token: null, org: "", strayTabAction: "ungroup", groupColor: "blue", user: null, assigned: null, merged: null });
+  const keys = ["gh_token", "gh_org", "stray_tab_action", "group_color", "cached_user", "cached_assigned", "cached_merged"];
   return new Promise((resolve) =>
     storage.get(keys, (result) => {
       // On open we always show whatever is cached, regardless of age — the
@@ -131,6 +182,8 @@ export function getInitCache(): Promise<InitCache> {
       resolve({
         token: result.gh_token ?? null,
         org: result.gh_org ?? "",
+        strayTabAction: result.stray_tab_action ?? "ungroup",
+        groupColor: result.group_color ?? "blue",
         user: result.cached_user ?? null,
         assigned: tab("cached_assigned"),
         merged: tab("cached_merged"),

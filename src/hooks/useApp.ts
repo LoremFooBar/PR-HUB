@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { validateToken, fetchAuthoredPRs, fetchMergedPRs } from "../github";
 import type { GitHubUser, PullRequestItem, Tab } from "../types";
-import { setToken, removeToken, setCachedUser, setCachedTab, clearCache, clearTabCache, setOrg as persistOrg, getInitCache } from "../storage";
+import { setToken, removeToken, setCachedUser, setCachedTab, clearCache, clearTabCache, setOrg as persistOrg, setStrayTabAction as persistStrayTabAction, setGroupColor as persistGroupColor, getInitCache, type StrayTabAction, type GroupColor } from "../storage";
 
 const ALL_TABS: Tab[] = ["assigned", "merged"];
 
@@ -10,6 +10,8 @@ export function useApp() {
   const [token, setTokenState] = useState<string | null>(null);
   const [user, setUser] = useState<GitHubUser | null>(null);
   const [org, setOrgState] = useState("");
+  const [strayTabAction, setStrayTabActionState] = useState<StrayTabAction>("ungroup");
+  const [groupColor, setGroupColorState] = useState<GroupColor>("blue");
   const [assigned, setAssigned] = useState<PullRequestItem[]>([]);
   const [merged, setMerged] = useState<PullRequestItem[]>([]);
   const [error, setError] = useState("");
@@ -109,14 +111,21 @@ export function useApp() {
     setShowSettings(false);
   }
 
-  // Persist a new org scope and refresh the data it affects.
-  async function saveSettings(newOrg: string) {
+  // Persist settings; only an org-scope change requires refetching data.
+  async function saveSettings(newOrg: string, newStrayTabAction: StrayTabAction, newGroupColor: GroupColor) {
+    setStrayTabActionState(newStrayTabAction);
+    setGroupColorState(newGroupColor);
+    await Promise.all([
+      persistStrayTabAction(newStrayTabAction),
+      persistGroupColor(newGroupColor),
+    ]);
     const trimmed = newOrg.trim();
+    const orgChanged = trimmed !== orgRef.current;
     orgRef.current = trimmed;
     setOrgState(trimmed);
     await persistOrg(trimmed);
     setShowSettings(false);
-    if (token && user) {
+    if (orgChanged && token && user) {
       await clearTabCache();
       loadedTabsRef.current = new Set();
       setAssigned([]);
@@ -131,6 +140,8 @@ export function useApp() {
       const cache = await getInitCache();
       orgRef.current = cache.org;
       setOrgState(cache.org);
+      setStrayTabActionState(cache.strayTabAction);
+      setGroupColorState(cache.groupColor);
 
       if (!cache.token) {
         setLoading(false);
@@ -204,6 +215,8 @@ export function useApp() {
     token,
     user,
     org,
+    strayTabAction,
+    groupColor,
     assigned,
     merged,
     error,
