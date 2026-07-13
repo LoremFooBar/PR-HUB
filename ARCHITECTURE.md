@@ -20,6 +20,7 @@ src/
     time.ts              # Date utilities (timeAgo, oneWeekAgo)
     repo.ts              # URL utilities (getRepoName)
     merge-status.ts      # PR merge readiness logic (getMergeStatus)
+    search.ts            # Client-side PR filtering (filterPRs, token-AND substring)
   hooks/
     useApp.ts            # App-level state: auth, org scope, tab loading, caching, prefetch
     useLoginScreen.ts    # Login form state: input, validation, loading, error
@@ -28,6 +29,7 @@ src/
     LoginScreen.tsx      # PAT input with ghp_ validation and scope badges
     Dashboard.tsx        # Header (incl. settings gear), tab bar, tab content routing
     Settings.tsx         # Org scope settings screen
+    SearchBar.tsx        # Filter input for the active tab (/ to focus, Esc to clear)
     PRList.tsx           # Paginated PR list with conditional badges/stats
     Skeleton.tsx         # Loading placeholders (DashboardSkeleton, PRListSkeleton)
     Icons.tsx            # SVG icon components (Check, Branch, Link, Merge, Settings, etc.)
@@ -69,7 +71,7 @@ popup.html
 | Layer | Modules | Role |
 |-------|---------|------|
 | **Types** | `types.ts`, `constants.ts` | Shared interfaces, type aliases, and configuration constants |
-| **Utils** | `utils/time.ts`, `utils/repo.ts`, `utils/merge-status.ts` | Pure functions with no dependencies on React or browser APIs |
+| **Utils** | `utils/time.ts`, `utils/repo.ts`, `utils/merge-status.ts`, `utils/search.ts` | Pure functions with no dependencies on React or browser APIs |
 | **API** | `github.ts` | All GitHub REST API calls: org-scoped search, enrichment, approval counts |
 | **Storage** | `storage.ts` | Chrome storage abstraction with 30m cache TTL and the persisted org setting. Falls back to no-op outside extension |
 | **Platform** | `tabs.ts` | Chrome tabs abstraction. Falls back to `window.open` outside extension |

@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { GitHubUser, PullRequestItem, Tab } from "../types";
 import { openOrFocusTab, syncPRTabGroup } from "../tabs";
+import { filterPRs } from "../utils/search";
 import PRList from "./PRList";
+import SearchBar from "./SearchBar";
 import { PRListSkeleton } from "./Skeleton";
 import { OpenTabsIcon, ReloadIcon, SettingsIcon } from "./Icons";
 
@@ -19,6 +21,18 @@ interface DashboardProps {
 
 export default function Dashboard({ user, assigned, merged, isLoadingPRs, error, onLogout, onReload, onTabChange, onOpenSettings }: DashboardProps) {
   const [tab, setTab] = useState<Tab>("assigned");
+  // One shared filter query, applied to whichever tab is active. Kept across
+  // tab switches but not persisted, so it resets when the panel reopens.
+  const [query, setQuery] = useState("");
+
+  const activeList = tab === "assigned" ? assigned : merged;
+  const filtered = useMemo(() => filterPRs(activeList, query), [activeList, query]);
+  const showSearch = !isLoadingPRs && !error && activeList.length > 0;
+  const emptyMessage = query
+    ? `No PRs match "${query}".`
+    : tab === "assigned"
+      ? "No open PRs assigned to you."
+      : "No PRs merged in the last week.";
 
   return (
     <div className="dashboard">
@@ -72,6 +86,15 @@ export default function Dashboard({ user, assigned, merged, isLoadingPRs, error,
             );
           })}
         </div>
+
+        {showSearch && (
+          <SearchBar
+            value={query}
+            onChange={setQuery}
+            resultCount={filtered.length}
+            totalCount={activeList.length}
+          />
+        )}
       </div>
 
       <div className="dashboard-scroll">
@@ -81,15 +104,15 @@ export default function Dashboard({ user, assigned, merged, isLoadingPRs, error,
           <p className="error-text">{error}</p>
         ) : tab === "assigned" ? (
           <PRList
-            prs={assigned}
-            emptyMessage="No open PRs assigned to you."
+            prs={filtered}
+            emptyMessage={emptyMessage}
             showChecks
             showBaseBranch
           />
         ) : (
           <PRList
-            prs={merged}
-            emptyMessage="No PRs merged in the last week."
+            prs={filtered}
+            emptyMessage={emptyMessage}
             showMergedBadge
             showBaseBranch
           />
