@@ -266,6 +266,15 @@ body {
   cursor: pointer;
 }
 
+.settings-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
 .settings-actions {
   display: flex;
   gap: 8px;

@@ -5,20 +5,22 @@ interface SettingsProps {
   org: string;
   strayTabAction: StrayTabAction;
   groupColor: GroupColor;
-  onSave(org: string, strayTabAction: StrayTabAction, groupColor: GroupColor): void;
+  autoSync: boolean;
+  onSave(org: string, strayTabAction: StrayTabAction, groupColor: GroupColor, autoSync: boolean): void;
   onCancel(): void;
 }
 
-export default function Settings({ org, strayTabAction, groupColor, onSave, onCancel }: SettingsProps) {
+export default function Settings({ org, strayTabAction, groupColor, autoSync, onSave, onCancel }: SettingsProps) {
   const [orgInput, setOrgInput] = useState(org);
   const [strayInput, setStrayInput] = useState<StrayTabAction>(strayTabAction);
   const [colorInput, setColorInput] = useState<GroupColor>(groupColor);
+  const [autoSyncInput, setAutoSyncInput] = useState(autoSync);
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     setSaving(true);
     try {
-      await onSave(orgInput, strayInput, colorInput);
+      await onSave(orgInput, strayInput, colorInput, autoSyncInput);
     } finally {
       setSaving(false);
     }
@@ -42,6 +44,15 @@ export default function Settings({ org, strayTabAction, groupColor, onSave, onCa
         className="input"
         autoFocus
       />
+      <label className="settings-label">Automatic tab group sync</label>
+      <label className="settings-checkbox">
+        <input
+          type="checkbox"
+          checked={autoSyncInput}
+          onChange={(e) => setAutoSyncInput(e.target.checked)}
+        />
+        Build and keep the "My PRs" group in sync on each background refresh
+      </label>
       <label className="settings-label">Stray tabs in the PR group</label>
       <p className="settings-hint">
         A stray tab is one in the "My PRs" group you navigated to a non-PR page.

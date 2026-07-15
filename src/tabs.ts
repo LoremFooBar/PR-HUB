@@ -7,6 +7,9 @@ export interface SyncPRTabGroupOptions {
   // only updated if it already exists, the active tab is never closed, and
   // tabs are not reordered.
   gentle?: boolean;
+  // Let a gentle sync create the group when it doesn't exist yet, instead of
+  // bailing. A manual sync always creates it regardless of this flag.
+  create?: boolean;
 }
 
 // A tab still "is" a PR if the user merely navigated within it (Files/Commits
@@ -28,7 +31,7 @@ function matchDesiredUrl(tabUrl: string, desired: string[]): string | undefined 
 // ordered to match `urls` (the alphabetical-by-title PR list order).
 export async function syncPRTabGroup(
   urls: string[],
-  { gentle = false }: SyncPRTabGroupOptions = {}
+  { gentle = false, create = false }: SyncPRTabGroupOptions = {}
 ): Promise<void> {
   if (typeof chrome === "undefined" || !chrome.tabs || !chrome.tabGroups) {
     if (!gentle) urls.forEach((url) => window.open(url, "_blank"));
@@ -44,9 +47,18 @@ export async function syncPRTabGroup(
         title: PR_GROUP_TITLE,
         windowId: chrome.windows.WINDOW_ID_CURRENT,
       });
-  if (gentle && !existingGroup) return; // the timer never creates the group
+  if (gentle && !existingGroup && !create) return; // the timer only maintains an existing group
 
-  const windowId = existingGroup?.windowId ?? chrome.windows.WINDOW_ID_CURRENT;
+  // Anchor to the group's window when it exists. Otherwise we're creating: a
+  // manual sync can use the current window, but the service worker has none, so
+  // fall back to the last focused window there.
+  let windowId = existingGroup?.windowId;
+  if (windowId == null) {
+    windowId = gentle
+      ? (await chrome.windows.getLastFocused().catch(() => null))?.id ??
+        chrome.windows.WINDOW_ID_CURRENT
+      : chrome.windows.WINDOW_ID_CURRENT;
+  }
 
   const tabIdByUrl = new Map<string, number>();
   const toCreate = new Set(urls);

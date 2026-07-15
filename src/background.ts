@@ -1,5 +1,5 @@
 import { fetchAuthoredPRs, fetchMergedPRs } from "./github";
-import { getToken, getOrg, getCachedUser, getCachedTab, setCachedTab } from "./storage";
+import { getToken, getOrg, getCachedUser, getCachedTab, setCachedTab, getAutoSync } from "./storage";
 import { syncPRTabGroup } from "./tabs";
 
 const REFRESH_ALARM = "refresh-prs";
@@ -24,13 +24,15 @@ async function refreshPRs() {
       setCachedTab("assigned", assigned),
       setCachedTab("merged", merged),
     ]);
-    // Keep the "My PRs" tab group current with the fresh data. Gentle: only
-    // if the group already exists, and without closing the active tab,
-    // repurposed tabs, or reordering — see syncPRTabGroup.
-    await syncPRTabGroup(
-      assigned.map((pr) => pr.html_url),
-      { gentle: true }
-    );
+    // Keep the "My PRs" tab group current with the fresh data. Gentle: without
+    // closing the active tab, repurposed tabs, or reordering — see
+    // syncPRTabGroup. When auto-sync is on we create the group if it's missing.
+    if (await getAutoSync()) {
+      await syncPRTabGroup(
+        assigned.map((pr) => pr.html_url),
+        { gentle: true, create: true }
+      );
+    }
   } catch {
     // Leave the existing cache untouched on failure.
   }

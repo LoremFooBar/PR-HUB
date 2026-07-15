@@ -12,6 +12,7 @@ export default function App() {
     org,
     strayTabAction,
     groupColor,
+    autoSync,
     assigned,
     merged,
     error,
@@ -40,6 +41,7 @@ export default function App() {
         org={org}
         strayTabAction={strayTabAction}
         groupColor={groupColor}
+        autoSync={autoSync}
         onSave={saveSettings}
         onCancel={closeSettings}
       />
