@@ -1,26 +1,34 @@
 import { useState } from "react";
-import { GROUP_COLORS, type GroupColor, type StrayTabAction } from "../storage";
+import { GROUP_COLORS, type GroupColor, type StrayTabAction, type TabSortOrder } from "../storage";
+
+const SORT_ORDERS: { value: TabSortOrder; label: string }[] = [
+  { value: "title", label: "By title" },
+  { value: "title_date", label: "By title, then date" },
+  { value: "date", label: "By date" },
+];
 
 interface SettingsProps {
   org: string;
   strayTabAction: StrayTabAction;
   groupColor: GroupColor;
   autoSync: boolean;
-  onSave(org: string, strayTabAction: StrayTabAction, groupColor: GroupColor, autoSync: boolean): void;
+  tabSortOrder: TabSortOrder;
+  onSave(org: string, strayTabAction: StrayTabAction, groupColor: GroupColor, autoSync: boolean, tabSortOrder: TabSortOrder): void;
   onCancel(): void;
 }
 
-export default function Settings({ org, strayTabAction, groupColor, autoSync, onSave, onCancel }: SettingsProps) {
+export default function Settings({ org, strayTabAction, groupColor, autoSync, tabSortOrder, onSave, onCancel }: SettingsProps) {
   const [orgInput, setOrgInput] = useState(org);
   const [strayInput, setStrayInput] = useState<StrayTabAction>(strayTabAction);
   const [colorInput, setColorInput] = useState<GroupColor>(groupColor);
   const [autoSyncInput, setAutoSyncInput] = useState(autoSync);
+  const [sortInput, setSortInput] = useState<TabSortOrder>(tabSortOrder);
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     setSaving(true);
     try {
-      await onSave(orgInput, strayInput, colorInput, autoSyncInput);
+      await onSave(orgInput, strayInput, colorInput, autoSyncInput, sortInput);
     } finally {
       setSaving(false);
     }
@@ -92,6 +100,20 @@ export default function Settings({ org, strayTabAction, groupColor, autoSync, on
             }
             onClick={() => setColorInput(color)}
           />
+        ))}
+      </div>
+      <label className="settings-label">Tab order in the PR group</label>
+      <div className="settings-radio-group">
+        {SORT_ORDERS.map(({ value, label }) => (
+          <label key={value} className="settings-radio">
+            <input
+              type="radio"
+              name="tab-sort-order"
+              checked={sortInput === value}
+              onChange={() => setSortInput(value)}
+            />
+            {label}
+          </label>
         ))}
       </div>
       <div className="settings-actions">

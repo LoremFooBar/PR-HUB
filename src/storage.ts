@@ -1,4 +1,7 @@
 import type { GitHubUser, PullRequestItem } from "./types";
+import type { TabSortOrder } from "./utils/sort";
+
+export type { TabSortOrder };
 
 const storage =
   typeof chrome !== "undefined" && chrome.storage
@@ -81,6 +84,23 @@ export function setAutoSync(enabled: boolean): Promise<void> {
   if (!storage) return Promise.resolve();
   return new Promise((resolve) =>
     storage.set({ auto_sync: enabled }, () => resolve())
+  );
+}
+
+// How tabs in the "My PRs" group are ordered on a manual sync. Default by title.
+export function getTabSortOrder(): Promise<TabSortOrder> {
+  if (!storage) return Promise.resolve("title");
+  return new Promise((resolve) =>
+    storage.get("tab_sort_order", (result) =>
+      resolve(result.tab_sort_order ?? "title")
+    )
+  );
+}
+
+export function setTabSortOrder(order: TabSortOrder): Promise<void> {
+  if (!storage) return Promise.resolve();
+  return new Promise((resolve) =>
+    storage.set({ tab_sort_order: order }, () => resolve())
   );
 }
 
@@ -180,14 +200,15 @@ export interface InitCache {
   strayTabAction: StrayTabAction;
   groupColor: GroupColor;
   autoSync: boolean;
+  tabSortOrder: TabSortOrder;
   user: GitHubUser | null;
   assigned: PullRequestItem[] | null;
   merged: PullRequestItem[] | null;
 }
 
 export function getInitCache(): Promise<InitCache> {
-  if (!storage) return Promise.resolve({ token: null, org: "", strayTabAction: "ungroup", groupColor: "blue", autoSync: false, user: null, assigned: null, merged: null });
-  const keys = ["gh_token", "gh_org", "stray_tab_action", "group_color", "auto_sync", "cached_user", "cached_assigned", "cached_merged"];
+  if (!storage) return Promise.resolve({ token: null, org: "", strayTabAction: "ungroup", groupColor: "blue", autoSync: false, tabSortOrder: "title", user: null, assigned: null, merged: null });
+  const keys = ["gh_token", "gh_org", "stray_tab_action", "group_color", "auto_sync", "tab_sort_order", "cached_user", "cached_assigned", "cached_merged"];
   return new Promise((resolve) =>
     storage.get(keys, (result) => {
       // On open we always show whatever is cached, regardless of age — the
@@ -202,6 +223,7 @@ export function getInitCache(): Promise<InitCache> {
         strayTabAction: result.stray_tab_action ?? "ungroup",
         groupColor: result.group_color ?? "blue",
         autoSync: result.auto_sync ?? false,
+        tabSortOrder: result.tab_sort_order ?? "title",
         user: result.cached_user ?? null,
         assigned: tab("cached_assigned"),
         merged: tab("cached_merged"),

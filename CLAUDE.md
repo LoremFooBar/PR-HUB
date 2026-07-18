@@ -30,9 +30,9 @@ After building, load `dist/` as an unpacked extension in `chrome://extensions`.
 
 **Components:**
 - `LoginScreen` — PAT input with `ghp_` prefix validation and scope badges.
-- `Dashboard` — Header (profile link, open-in-tab-group, reload, settings gear, logout) + tab bar ("My PRs" / "Merged") + search bar + scrollable PR list. PRs are sorted alphabetically by title (in `github.ts`). The tab-group button calls `syncPRTabGroup` (`src/tabs.ts`), which opens all open PRs in a "My PRs" tab group and re-syncs it (closes stale tabs, opens missing ones) on each press.
+- `Dashboard` — Header (profile link, open-in-tab-group, reload, settings gear, logout) + tab bar ("My PRs" / "Merged") + search bar + scrollable PR list. PRs are sorted alphabetically by title (in `github.ts`). The tab-group button calls `syncPRTabGroup` (`src/tabs.ts`), which opens all open PRs in a "My PRs" tab group and re-syncs it (closes stale tabs, opens missing ones) on each press. It takes the PR items (not just URLs) and orders the tabs per the `tab_sort_order` setting via `sortPRsForTabGroup` (`src/utils/sort.ts`) — independent of the PR list's fixed by-title order.
 - `SearchBar` — Client-side filter for the active tab. Its query is applied via the pure `filterPRs` (`src/utils/search.ts`, token-AND substring over title/repo/branch/author) memoized in `Dashboard`. Ephemeral (not persisted); `/` focuses, `Esc` clears.
-- `Settings` — Org scope (free-text org login, blank = all orgs), automatic tab group sync (on/off, default off; when on it also creates the group if missing), the stray-tab action (move out of group / leave in group), and the tab-group color (Chrome's fixed palette, default blue), Save/Cancel.
+- `Settings` — Org scope (free-text org login, blank = all orgs), automatic tab group sync (on/off, default off; when on it also creates the group if missing), the stray-tab action (move out of group / leave in group), the tab-group color (Chrome's fixed palette, default blue), and the tab sort order (`tab_sort_order`: by title / by title then date / by date — all ascending, default by title), Save/Cancel.
 - `PRList` — Reusable paginated list (10 per page). Conditionally renders check badges, author info, and comment/approval counts based on props.
 - `Skeleton` — Loading placeholders (`DashboardSkeleton` for initial load, `PRListSkeleton` for reload).
 

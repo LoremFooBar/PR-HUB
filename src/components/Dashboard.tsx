@@ -51,7 +51,7 @@ export default function Dashboard({ user, assigned, merged, isLoadingPRs, error,
           </a>
           <div className="header-actions">
             <button
-              onClick={() => syncPRTabGroup(assigned.map((pr) => pr.html_url))}
+              onClick={() => syncPRTabGroup(assigned)}
               className="reload-btn"
               disabled={assigned.length === 0}
               title="Open my open PRs in a tab group (Ctrl/Cmd+Shift+Y)"

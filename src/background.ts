@@ -28,10 +28,7 @@ async function refreshPRs() {
     // closing the active tab, repurposed tabs, or reordering — see
     // syncPRTabGroup. When auto-sync is on we create the group if it's missing.
     if (await getAutoSync()) {
-      await syncPRTabGroup(
-        assigned.map((pr) => pr.html_url),
-        { gentle: true, create: true }
-      );
+      await syncPRTabGroup(assigned, { gentle: true, create: true });
     }
   } catch {
     // Leave the existing cache untouched on failure.
@@ -62,7 +59,7 @@ chrome.commands?.onCommand.addListener(async (command) => {
   if (command !== SYNC_TABS_COMMAND) return;
   const assigned = await getCachedTab("assigned");
   if (!assigned || assigned.length === 0) return;
-  await syncPRTabGroup(assigned.map((pr) => pr.html_url));
+  await syncPRTabGroup(assigned);
 });
 
 // Clicking the toolbar icon opens the side panel instead of a popup.

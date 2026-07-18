@@ -13,6 +13,7 @@ export default function App() {
     strayTabAction,
     groupColor,
     autoSync,
+    tabSortOrder,
     assigned,
     merged,
     error,
@@ -42,6 +43,7 @@ export default function App() {
         strayTabAction={strayTabAction}
         groupColor={groupColor}
         autoSync={autoSync}
+        tabSortOrder={tabSortOrder}
         onSave={saveSettings}
         onCancel={closeSettings}
       />

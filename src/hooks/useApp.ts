@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { validateToken, fetchAuthoredPRs, fetchMergedPRs } from "../github";
 import type { GitHubUser, PullRequestItem, Tab } from "../types";
-import { setToken, removeToken, setCachedUser, setCachedTab, clearCache, clearTabCache, setOrg as persistOrg, setStrayTabAction as persistStrayTabAction, setGroupColor as persistGroupColor, setAutoSync as persistAutoSync, getInitCache, type StrayTabAction, type GroupColor } from "../storage";
+import { setToken, removeToken, setCachedUser, setCachedTab, clearCache, clearTabCache, setOrg as persistOrg, setStrayTabAction as persistStrayTabAction, setGroupColor as persistGroupColor, setAutoSync as persistAutoSync, setTabSortOrder as persistTabSortOrder, getInitCache, type StrayTabAction, type GroupColor, type TabSortOrder } from "../storage";
 
 const ALL_TABS: Tab[] = ["assigned", "merged"];
 
@@ -13,6 +13,7 @@ export function useApp() {
   const [strayTabAction, setStrayTabActionState] = useState<StrayTabAction>("ungroup");
   const [groupColor, setGroupColorState] = useState<GroupColor>("blue");
   const [autoSync, setAutoSyncState] = useState(false);
+  const [tabSortOrder, setTabSortOrderState] = useState<TabSortOrder>("title");
   const [assigned, setAssigned] = useState<PullRequestItem[]>([]);
   const [merged, setMerged] = useState<PullRequestItem[]>([]);
   const [error, setError] = useState("");
@@ -113,14 +114,16 @@ export function useApp() {
   }
 
   // Persist settings; only an org-scope change requires refetching data.
-  async function saveSettings(newOrg: string, newStrayTabAction: StrayTabAction, newGroupColor: GroupColor, newAutoSync: boolean) {
+  async function saveSettings(newOrg: string, newStrayTabAction: StrayTabAction, newGroupColor: GroupColor, newAutoSync: boolean, newTabSortOrder: TabSortOrder) {
     setStrayTabActionState(newStrayTabAction);
     setGroupColorState(newGroupColor);
     setAutoSyncState(newAutoSync);
+    setTabSortOrderState(newTabSortOrder);
     await Promise.all([
       persistStrayTabAction(newStrayTabAction),
       persistGroupColor(newGroupColor),
       persistAutoSync(newAutoSync),
+      persistTabSortOrder(newTabSortOrder),
     ]);
     const trimmed = newOrg.trim();
     const orgChanged = trimmed !== orgRef.current;
@@ -146,6 +149,7 @@ export function useApp() {
       setStrayTabActionState(cache.strayTabAction);
       setGroupColorState(cache.groupColor);
       setAutoSyncState(cache.autoSync);
+      setTabSortOrderState(cache.tabSortOrder);
 
       if (!cache.token) {
         setLoading(false);
@@ -222,6 +226,7 @@ export function useApp() {
     strayTabAction,
     groupColor,
     autoSync,
+    tabSortOrder,
     assigned,
     merged,
     error,
