@@ -232,6 +232,7 @@ body {
 .settings-color-row {
   display: flex;
   gap: 8px;
+  margin-bottom: 16px;
 }
 
 .settings-color-swatch {
