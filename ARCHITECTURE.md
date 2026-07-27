@@ -16,9 +16,12 @@ src/
   github.ts              # GitHub REST API layer (search, enrich, checks; org-scoped queries)
   storage.ts             # Chrome storage wrapper with caching (30m TTL) and org setting
   tabs.ts                # Chrome tabs helper (open or focus existing tab)
+  content.ts             # Content script: hover preview for cached PR links off github.com
+  preview-style.ts       # Styles for the hover preview card (injected into its shadow root)
   utils/
     time.ts              # Date utilities (timeAgo, oneWeekAgo)
     repo.ts              # URL utilities (getRepoName)
+    pr-url.ts            # Canonical GitHub PR URL matching (normalizePRUrl)
     merge-status.ts      # PR merge readiness logic (getMergeStatus)
     search.ts            # Client-side PR filtering (filterPRs, token-AND substring)
   hooks/
@@ -73,8 +76,9 @@ popup.html
 | **Types** | `types.ts`, `constants.ts` | Shared interfaces, type aliases, and configuration constants |
 | **Utils** | `utils/time.ts`, `utils/repo.ts`, `utils/merge-status.ts`, `utils/search.ts` | Pure functions with no dependencies on React or browser APIs |
 | **API** | `github.ts` | All GitHub REST API calls: org-scoped search, enrichment, approval counts |
-| **Storage** | `storage.ts` | Chrome storage abstraction with 30m cache TTL and the persisted org setting. Falls back to no-op outside extension |
+| **Storage** | `storage.ts` | Chrome storage abstraction with 30m cache TTL and the persisted settings (`AppSettings`, written in one call). Falls back to no-op outside extension |
 | **Platform** | `tabs.ts` | Chrome tabs abstraction. Falls back to `window.open` outside extension |
+| **Content script** | `content.ts`, `preview-style.ts` | Runs in every page except github.com. Reads the PR cache from `chrome.storage.local` and renders the hover preview into a shadow root. No React, no network |
 | **Hooks** | `hooks/useApp.ts`, `hooks/useLoginScreen.ts`, `hooks/usePRList.ts` | React state and effects. Each hook encapsulates one concern |
 | **Components** | `components/*.tsx` | Pure rendering. Components receive data and callbacks from hooks |
 

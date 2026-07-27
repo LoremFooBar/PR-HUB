@@ -8,6 +8,7 @@ Chrome extension that shows your open pull requests, merged PRs, CI status, and 
 - **Merged tab** — Recently merged PRs (last week) with base branch info
 - **Filter/search** — Type to filter the active tab by title, repo, branch, or author (`/` to focus, `Esc` to clear); great for jumping to a ticket like `PLA-252`
 - **Organization scope** — Settings screen to limit PRs to a single org (leave blank for all)
+- **Hover preview** — Hovering a GitHub PR link on any other site shows a small floating card with its title, repo, branches, review counts, and merge readiness. Cache-only: it appears for PRs already loaded in the panel and never calls the API. Can be turned off in Settings.
 - **Copy actions** — Hover any PR to copy its branch name or URL
 - **Production branch warnings** — Visual indicator when a PR targets `main` or `master`
 - **GitHub Primer theme** — Light and dark mode that follows your OS setting

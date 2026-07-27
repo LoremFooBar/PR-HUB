@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GROUP_COLORS, type GroupColor, type StrayTabAction, type TabSortOrder } from "../storage";
+import { GROUP_COLORS, type AppSettings, type TabSortOrder } from "../storage";
 
 const SORT_ORDERS: { value: TabSortOrder; label: string }[] = [
   { value: "title", label: "By title" },
@@ -8,27 +8,23 @@ const SORT_ORDERS: { value: TabSortOrder; label: string }[] = [
 ];
 
 interface SettingsProps {
-  org: string;
-  strayTabAction: StrayTabAction;
-  groupColor: GroupColor;
-  autoSync: boolean;
-  tabSortOrder: TabSortOrder;
-  onSave(org: string, strayTabAction: StrayTabAction, groupColor: GroupColor, autoSync: boolean, tabSortOrder: TabSortOrder): void;
+  settings: AppSettings;
+  onSave(settings: AppSettings): void;
   onCancel(): void;
 }
 
-export default function Settings({ org, strayTabAction, groupColor, autoSync, tabSortOrder, onSave, onCancel }: SettingsProps) {
-  const [orgInput, setOrgInput] = useState(org);
-  const [strayInput, setStrayInput] = useState<StrayTabAction>(strayTabAction);
-  const [colorInput, setColorInput] = useState<GroupColor>(groupColor);
-  const [autoSyncInput, setAutoSyncInput] = useState(autoSync);
-  const [sortInput, setSortInput] = useState<TabSortOrder>(tabSortOrder);
+export default function Settings({ settings, onSave, onCancel }: SettingsProps) {
+  const [draft, setDraft] = useState(settings);
   const [saving, setSaving] = useState(false);
+
+  function update<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
+    setDraft((current) => ({ ...current, [key]: value }));
+  }
 
   async function handleSave() {
     setSaving(true);
     try {
-      await onSave(orgInput, strayInput, colorInput, autoSyncInput, sortInput);
+      await onSave(draft);
     } finally {
       setSaving(false);
     }
@@ -46,8 +42,8 @@ export default function Settings({ org, strayTabAction, groupColor, autoSync, ta
         id="org-input"
         type="text"
         placeholder="org login (optional)"
-        value={orgInput}
-        onChange={(e) => setOrgInput(e.target.value)}
+        value={draft.org}
+        onChange={(e) => update("org", e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
         className="input"
         autoFocus
@@ -56,10 +52,19 @@ export default function Settings({ org, strayTabAction, groupColor, autoSync, ta
       <label className="settings-checkbox">
         <input
           type="checkbox"
-          checked={autoSyncInput}
-          onChange={(e) => setAutoSyncInput(e.target.checked)}
+          checked={draft.autoSync}
+          onChange={(e) => update("autoSync", e.target.checked)}
         />
         Build and keep the "My PRs" group in sync on each background refresh
+      </label>
+      <label className="settings-label">Hover preview on PR links</label>
+      <label className="settings-checkbox">
+        <input
+          type="checkbox"
+          checked={draft.linkPreview}
+          onChange={(e) => update("linkPreview", e.target.checked)}
+        />
+        Preview cached PRs when hovering their links outside github.com
       </label>
       <label className="settings-label">Stray tabs in the PR group</label>
       <p className="settings-hint">
@@ -71,8 +76,8 @@ export default function Settings({ org, strayTabAction, groupColor, autoSync, ta
           <input
             type="radio"
             name="stray-tab-action"
-            checked={strayInput === "ungroup"}
-            onChange={() => setStrayInput("ungroup")}
+            checked={draft.strayTabAction === "ungroup"}
+            onChange={() => update("strayTabAction", "ungroup")}
           />
           Move it out of the group
         </label>
@@ -80,8 +85,8 @@ export default function Settings({ org, strayTabAction, groupColor, autoSync, ta
           <input
             type="radio"
             name="stray-tab-action"
-            checked={strayInput === "keep"}
-            onChange={() => setStrayInput("keep")}
+            checked={draft.strayTabAction === "keep"}
+            onChange={() => update("strayTabAction", "keep")}
           />
           Leave it in the group
         </label>
@@ -93,12 +98,12 @@ export default function Settings({ org, strayTabAction, groupColor, autoSync, ta
             key={color}
             type="button"
             role="radio"
-            aria-checked={colorInput === color}
+            aria-checked={draft.groupColor === color}
             title={color}
             className={
-              "settings-color-swatch swatch-" + color + (colorInput === color ? " selected" : "")
+              "settings-color-swatch swatch-" + color + (draft.groupColor === color ? " selected" : "")
             }
-            onClick={() => setColorInput(color)}
+            onClick={() => update("groupColor", color)}
           />
         ))}
       </div>
@@ -109,8 +114,8 @@ export default function Settings({ org, strayTabAction, groupColor, autoSync, ta
             <input
               type="radio"
               name="tab-sort-order"
-              checked={sortInput === value}
-              onChange={() => setSortInput(value)}
+              checked={draft.tabSortOrder === value}
+              onChange={() => update("tabSortOrder", value)}
             />
             {label}
           </label>

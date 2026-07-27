@@ -9,11 +9,7 @@ export default function App() {
     loading,
     token,
     user,
-    org,
-    strayTabAction,
-    groupColor,
-    autoSync,
-    tabSortOrder,
+    settings,
     assigned,
     merged,
     error,
@@ -38,15 +34,7 @@ export default function App() {
 
   if (showSettings) {
     return (
-      <Settings
-        org={org}
-        strayTabAction={strayTabAction}
-        groupColor={groupColor}
-        autoSync={autoSync}
-        tabSortOrder={tabSortOrder}
-        onSave={saveSettings}
-        onCancel={closeSettings}
-      />
+      <Settings settings={settings} onSave={saveSettings} onCancel={closeSettings} />
     );
   }
 

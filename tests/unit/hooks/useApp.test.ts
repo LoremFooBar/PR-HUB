@@ -20,7 +20,16 @@ const storage = jest.requireMock("../../../src/storage") as {
   setCachedTab: jest.Mock;
   clearCache: jest.Mock;
   clearTabCache: jest.Mock;
-  setOrg: jest.Mock;
+  setSettings: jest.Mock;
+};
+
+const defaultSettings = {
+  org: "",
+  strayTabAction: "ungroup" as const,
+  groupColor: "blue" as const,
+  autoSync: false,
+  tabSortOrder: "title" as const,
+  linkPreview: true,
 };
 
 const mockUser: GitHubUser = { login: "testuser", avatar_url: "https://avatar.url" };
@@ -40,8 +49,8 @@ const mockPRs: PullRequestItem[] = [
 beforeEach(() => {
   // Default: no cache
   storage.getInitCache.mockResolvedValue({
+    ...defaultSettings,
     token: null,
-    org: "",
     user: null,
     assigned: null,
     merged: null,
@@ -52,7 +61,7 @@ beforeEach(() => {
   storage.setCachedTab.mockResolvedValue(undefined);
   storage.clearCache.mockResolvedValue(undefined);
   storage.clearTabCache.mockResolvedValue(undefined);
-  storage.setOrg.mockResolvedValue(undefined);
+  storage.setSettings.mockResolvedValue(undefined);
 
   github.validateToken.mockResolvedValue(mockUser);
   github.fetchAuthoredPRs.mockResolvedValue(mockPRs);
@@ -118,7 +127,7 @@ describe("useApp", () => {
     await act(() => Promise.resolve());
     await act(() => Promise.resolve());
 
-    expect(result.current.org).toBe("my-org");
+    expect(result.current.settings.org).toBe("my-org");
     expect(github.fetchAuthoredPRs).toHaveBeenCalledWith("ghp_cached", "testuser", "my-org");
   });
 
@@ -184,9 +193,9 @@ describe("useApp", () => {
 
     github.fetchAuthoredPRs.mockClear();
 
-    await act(() => result.current.saveSettings("  acme  "));
-    expect(storage.setOrg).toHaveBeenCalledWith("acme");
-    expect(result.current.org).toBe("acme");
+    await act(() => result.current.saveSettings({ ...defaultSettings, org: "  acme  " }));
+    expect(storage.setSettings).toHaveBeenCalledWith({ ...defaultSettings, org: "acme" });
+    expect(result.current.settings.org).toBe("acme");
     expect(result.current.showSettings).toBe(false);
     expect(github.fetchAuthoredPRs).toHaveBeenCalledWith("ghp_valid", "testuser", "acme");
   });

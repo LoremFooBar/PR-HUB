@@ -34,75 +34,10 @@ export function removeToken(): Promise<void> {
 
 // --- Settings ---
 
-// Org scope is a persistent preference, kept independently of the auth token
-// and the PR cache so it survives logout.
-export function getOrg(): Promise<string> {
-  if (!storage) return Promise.resolve("");
-  return new Promise((resolve) =>
-    storage.get("gh_org", (result) => resolve(result.gh_org ?? ""))
-  );
-}
-
-export function setOrg(org: string): Promise<void> {
-  if (!storage) return Promise.resolve();
-  return new Promise((resolve) =>
-    storage.set({ gh_org: org }, () => resolve())
-  );
-}
-
 // What tab-group sync does with a "stray" tab — one in the "My PRs" group the
 // user navigated to a non-PR URL. Never closed; either moved out of the group
 // or left in it.
 export type StrayTabAction = "ungroup" | "keep";
-
-export function getStrayTabAction(): Promise<StrayTabAction> {
-  if (!storage) return Promise.resolve("ungroup");
-  return new Promise((resolve) =>
-    storage.get("stray_tab_action", (result) =>
-      resolve(result.stray_tab_action ?? "ungroup")
-    )
-  );
-}
-
-export function setStrayTabAction(action: StrayTabAction): Promise<void> {
-  if (!storage) return Promise.resolve();
-  return new Promise((resolve) =>
-    storage.set({ stray_tab_action: action }, () => resolve())
-  );
-}
-
-// Whether the background refresh re-syncs the "My PRs" tab group — creating it
-// if missing. Off by default; when off the group only changes on a manual sync.
-export function getAutoSync(): Promise<boolean> {
-  if (!storage) return Promise.resolve(false);
-  return new Promise((resolve) =>
-    storage.get("auto_sync", (result) => resolve(result.auto_sync ?? false))
-  );
-}
-
-export function setAutoSync(enabled: boolean): Promise<void> {
-  if (!storage) return Promise.resolve();
-  return new Promise((resolve) =>
-    storage.set({ auto_sync: enabled }, () => resolve())
-  );
-}
-
-// How tabs in the "My PRs" group are ordered on a manual sync. Default by title.
-export function getTabSortOrder(): Promise<TabSortOrder> {
-  if (!storage) return Promise.resolve("title");
-  return new Promise((resolve) =>
-    storage.get("tab_sort_order", (result) =>
-      resolve(result.tab_sort_order ?? "title")
-    )
-  );
-}
-
-export function setTabSortOrder(order: TabSortOrder): Promise<void> {
-  if (!storage) return Promise.resolve();
-  return new Promise((resolve) =>
-    storage.set({ tab_sort_order: order }, () => resolve())
-  );
-}
 
 // Chrome's fixed tab-group color palette (chrome.tabGroups.ColorEnum).
 export const GROUP_COLORS = [
@@ -118,17 +53,84 @@ export const GROUP_COLORS = [
 ] as const;
 export type GroupColor = (typeof GROUP_COLORS)[number];
 
-export function getGroupColor(): Promise<GroupColor> {
-  if (!storage) return Promise.resolve("blue");
+// Settings are persistent preferences, kept independently of the auth token and
+// the PR cache so they survive logout.
+export interface AppSettings {
+  org: string;
+  strayTabAction: StrayTabAction;
+  groupColor: GroupColor;
+  // Whether the background refresh re-syncs the "My PRs" tab group, creating it
+  // if missing. When off, the group only changes on a manual sync.
+  autoSync: boolean;
+  tabSortOrder: TabSortOrder;
+  linkPreview: boolean;
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  org: "",
+  strayTabAction: "ungroup",
+  groupColor: "blue",
+  autoSync: false,
+  tabSortOrder: "title",
+  linkPreview: true,
+};
+
+export function getOrg(): Promise<string> {
+  if (!storage) return Promise.resolve(DEFAULT_SETTINGS.org);
   return new Promise((resolve) =>
-    storage.get("group_color", (result) => resolve(result.group_color ?? "blue"))
+    storage.get("gh_org", (result) => resolve(result.gh_org ?? DEFAULT_SETTINGS.org))
   );
 }
 
-export function setGroupColor(color: GroupColor): Promise<void> {
+export function getStrayTabAction(): Promise<StrayTabAction> {
+  if (!storage) return Promise.resolve(DEFAULT_SETTINGS.strayTabAction);
+  return new Promise((resolve) =>
+    storage.get("stray_tab_action", (result) =>
+      resolve(result.stray_tab_action ?? DEFAULT_SETTINGS.strayTabAction)
+    )
+  );
+}
+
+export function getAutoSync(): Promise<boolean> {
+  if (!storage) return Promise.resolve(DEFAULT_SETTINGS.autoSync);
+  return new Promise((resolve) =>
+    storage.get("auto_sync", (result) => resolve(result.auto_sync ?? DEFAULT_SETTINGS.autoSync))
+  );
+}
+
+export function getTabSortOrder(): Promise<TabSortOrder> {
+  if (!storage) return Promise.resolve(DEFAULT_SETTINGS.tabSortOrder);
+  return new Promise((resolve) =>
+    storage.get("tab_sort_order", (result) =>
+      resolve(result.tab_sort_order ?? DEFAULT_SETTINGS.tabSortOrder)
+    )
+  );
+}
+
+export function getGroupColor(): Promise<GroupColor> {
+  if (!storage) return Promise.resolve(DEFAULT_SETTINGS.groupColor);
+  return new Promise((resolve) =>
+    storage.get("group_color", (result) =>
+      resolve(result.group_color ?? DEFAULT_SETTINGS.groupColor)
+    )
+  );
+}
+
+// Written in one go, so no reader ever sees a half-applied change.
+export function setSettings(settings: AppSettings): Promise<void> {
   if (!storage) return Promise.resolve();
   return new Promise((resolve) =>
-    storage.set({ group_color: color }, () => resolve())
+    storage.set(
+      {
+        gh_org: settings.org,
+        stray_tab_action: settings.strayTabAction,
+        group_color: settings.groupColor,
+        auto_sync: settings.autoSync,
+        tab_sort_order: settings.tabSortOrder,
+        link_preview: settings.linkPreview,
+      },
+      () => resolve()
+    )
   );
 }
 
@@ -194,21 +196,16 @@ export function clearTabCache(): Promise<void> {
 }
 
 // Batch read: single chrome.storage call instead of several separate ones.
-export interface InitCache {
+export interface InitCache extends AppSettings {
   token: string | null;
-  org: string;
-  strayTabAction: StrayTabAction;
-  groupColor: GroupColor;
-  autoSync: boolean;
-  tabSortOrder: TabSortOrder;
   user: GitHubUser | null;
   assigned: PullRequestItem[] | null;
   merged: PullRequestItem[] | null;
 }
 
 export function getInitCache(): Promise<InitCache> {
-  if (!storage) return Promise.resolve({ token: null, org: "", strayTabAction: "ungroup", groupColor: "blue", autoSync: false, tabSortOrder: "title", user: null, assigned: null, merged: null });
-  const keys = ["gh_token", "gh_org", "stray_tab_action", "group_color", "auto_sync", "tab_sort_order", "cached_user", "cached_assigned", "cached_merged"];
+  if (!storage) return Promise.resolve({ ...DEFAULT_SETTINGS, token: null, user: null, assigned: null, merged: null });
+  const keys = ["gh_token", "gh_org", "stray_tab_action", "group_color", "auto_sync", "tab_sort_order", "link_preview", "cached_user", "cached_assigned", "cached_merged"];
   return new Promise((resolve) =>
     storage.get(keys, (result) => {
       // On open we always show whatever is cached, regardless of age — the
@@ -219,11 +216,12 @@ export function getInitCache(): Promise<InitCache> {
       };
       resolve({
         token: result.gh_token ?? null,
-        org: result.gh_org ?? "",
-        strayTabAction: result.stray_tab_action ?? "ungroup",
-        groupColor: result.group_color ?? "blue",
-        autoSync: result.auto_sync ?? false,
-        tabSortOrder: result.tab_sort_order ?? "title",
+        org: result.gh_org ?? DEFAULT_SETTINGS.org,
+        strayTabAction: result.stray_tab_action ?? DEFAULT_SETTINGS.strayTabAction,
+        groupColor: result.group_color ?? DEFAULT_SETTINGS.groupColor,
+        autoSync: result.auto_sync ?? DEFAULT_SETTINGS.autoSync,
+        tabSortOrder: result.tab_sort_order ?? DEFAULT_SETTINGS.tabSortOrder,
+        linkPreview: result.link_preview ?? DEFAULT_SETTINGS.linkPreview,
         user: result.cached_user ?? null,
         assigned: tab("cached_assigned"),
         merged: tab("cached_merged"),
