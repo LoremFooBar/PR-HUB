@@ -78,6 +78,22 @@ test.describe("PRList", () => {
     await expect(component.getByText("octocat")).toBeVisible();
   });
 
+  test("tags already-reviewed PRs when showReviewedTag is true", async ({ mount }) => {
+    const prs = [makePR({ reviewed_by_me: true }), makePR({ id: 2, number: 2, title: "Fresh PR" })];
+    const component = await mount(
+      <PRList prs={prs} emptyMessage="" showChecks showReviewedTag />
+    );
+    await expect(component.getByText("reviewed by you")).toHaveCount(1);
+  });
+
+  test("tags draft PRs when showDraftTag is true", async ({ mount }) => {
+    const prs = [makePR({ draft: true }), makePR({ id: 2, number: 2, title: "Ready PR" })];
+    const component = await mount(
+      <PRList prs={prs} emptyMessage="" showChecks showDraftTag />
+    );
+    await expect(component.getByText("draft")).toHaveCount(1);
+  });
+
   test("shows merged badge when showMergedBadge is true", async ({ mount }) => {
     const prs = [makePR()];
     const component = await mount(

@@ -10,8 +10,7 @@ export default function App() {
     token,
     user,
     settings,
-    assigned,
-    merged,
+    prs,
     error,
     isLoadingPRs,
     showSettings,
@@ -41,8 +40,7 @@ export default function App() {
   return (
     <Dashboard
       user={user}
-      assigned={assigned}
-      merged={merged}
+      prs={prs}
       isLoadingPRs={isLoadingPRs}
       error={error}
       onLogout={logout}

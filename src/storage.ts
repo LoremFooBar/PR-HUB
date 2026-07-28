@@ -1,4 +1,5 @@
-import type { GitHubUser, PullRequestItem } from "./types";
+import type { GitHubUser, PullRequestItem, Tab } from "./types";
+import { ALL_TABS, TAB_CACHE_KEYS } from "./constants";
 import type { TabSortOrder } from "./utils/sort";
 
 export type { TabSortOrder };
@@ -180,40 +181,43 @@ export function setCachedTab(tab: string, data: PullRequestItem[]): Promise<void
 export function clearCache(): Promise<void> {
   if (!storage) return Promise.resolve();
   return new Promise((resolve) =>
-    storage.remove(
-      ["cached_user", "cached_assigned", "cached_merged"],
-      () => resolve()
-    )
+    storage.remove(["cached_user", ...TAB_CACHE_KEYS], () => resolve())
   );
 }
 
 // Invalidates just the per-tab PR caches, leaving the cached user in place.
 export function clearTabCache(): Promise<void> {
   if (!storage) return Promise.resolve();
-  return new Promise((resolve) =>
-    storage.remove(["cached_assigned", "cached_merged"], () => resolve())
-  );
+  return new Promise((resolve) => storage.remove(TAB_CACHE_KEYS, () => resolve()));
+}
+
+export type CachedTabs = Record<Tab, PullRequestItem[] | null>;
+
+function noCachedTabs(): CachedTabs {
+  const tabs = {} as CachedTabs;
+  for (const tab of ALL_TABS) tabs[tab] = null;
+  return tabs;
 }
 
 // Batch read: single chrome.storage call instead of several separate ones.
 export interface InitCache extends AppSettings {
   token: string | null;
   user: GitHubUser | null;
-  assigned: PullRequestItem[] | null;
-  merged: PullRequestItem[] | null;
+  tabs: CachedTabs;
 }
 
 export function getInitCache(): Promise<InitCache> {
-  if (!storage) return Promise.resolve({ ...DEFAULT_SETTINGS, token: null, user: null, assigned: null, merged: null });
-  const keys = ["gh_token", "gh_org", "stray_tab_action", "group_color", "auto_sync", "tab_sort_order", "link_preview", "cached_user", "cached_assigned", "cached_merged"];
+  if (!storage) return Promise.resolve({ ...DEFAULT_SETTINGS, token: null, user: null, tabs: noCachedTabs() });
+  const keys = ["gh_token", "gh_org", "stray_tab_action", "group_color", "auto_sync", "tab_sort_order", "link_preview", "cached_user", ...TAB_CACHE_KEYS];
   return new Promise((resolve) =>
     storage.get(keys, (result) => {
       // On open we always show whatever is cached, regardless of age — the
       // background alarm keeps the cache fresh, so we never block on a fetch.
-      const tab = (key: string): PullRequestItem[] | null => {
-        const entry: CachedTab | undefined = result[key];
-        return entry ? entry.data : null;
-      };
+      const tabs = noCachedTabs();
+      for (const tab of ALL_TABS) {
+        const entry: CachedTab | undefined = result[`cached_${tab}`];
+        if (entry) tabs[tab] = entry.data;
+      }
       resolve({
         token: result.gh_token ?? null,
         org: result.gh_org ?? DEFAULT_SETTINGS.org,
@@ -223,8 +227,7 @@ export function getInitCache(): Promise<InitCache> {
         tabSortOrder: result.tab_sort_order ?? DEFAULT_SETTINGS.tabSortOrder,
         linkPreview: result.link_preview ?? DEFAULT_SETTINGS.linkPreview,
         user: result.cached_user ?? null,
-        assigned: tab("cached_assigned"),
-        merged: tab("cached_merged"),
+        tabs,
       });
     })
   );

@@ -1,17 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { validateToken, fetchAuthoredPRs, fetchMergedPRs } from "../github";
+import { validateToken, fetchAuthoredPRs, fetchMergedPRs, fetchReviewPRs } from "../github";
 import type { GitHubUser, PullRequestItem, Tab } from "../types";
+import { ALL_TABS } from "../constants";
 import { setToken, removeToken, setCachedUser, setCachedTab, clearCache, clearTabCache, setSettings as persistSettings, getInitCache, DEFAULT_SETTINGS, type AppSettings } from "../storage";
 
-const ALL_TABS: Tab[] = ["assigned", "merged"];
+export type TabData = Record<Tab, PullRequestItem[]>;
+
+function emptyTabs(): TabData {
+  const tabs = {} as TabData;
+  for (const tab of ALL_TABS) tabs[tab] = [];
+  return tabs;
+}
 
 export function useApp() {
   const [loading, setLoading] = useState(true);
   const [token, setTokenState] = useState<string | null>(null);
   const [user, setUser] = useState<GitHubUser | null>(null);
   const [settings, setSettingsState] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [assigned, setAssigned] = useState<PullRequestItem[]>([]);
-  const [merged, setMerged] = useState<PullRequestItem[]>([]);
+  const [prs, setPRs] = useState<TabData>(emptyTabs);
   const [error, setError] = useState("");
   const [isLoadingPRs, setIsLoadingPRs] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -21,12 +27,12 @@ export function useApp() {
   const orgRef = useRef("");
 
   const setTabData = useCallback((tab: Tab, data: PullRequestItem[]) => {
-    if (tab === "assigned") setAssigned(data);
-    else setMerged(data);
+    setPRs((prev) => ({ ...prev, [tab]: data }));
   }, []);
 
   const fetchTab = useCallback((tab: Tab, pat: string, username: string): Promise<PullRequestItem[]> => {
     if (tab === "assigned") return fetchAuthoredPRs(pat, username, orgRef.current);
+    if (tab === "review") return fetchReviewPRs(pat, orgRef.current);
     return fetchMergedPRs(pat, username, orgRef.current);
   }, []);
 
@@ -78,8 +84,7 @@ export function useApp() {
     await clearCache();
     setTokenState(null);
     setUser(null);
-    setAssigned([]);
-    setMerged([]);
+    setPRs(emptyTabs());
     loadedTabsRef.current = new Set();
     setShowSettings(false);
   }
@@ -95,8 +100,7 @@ export function useApp() {
     if (!token || !user) return;
     clearTabCache();
     loadedTabsRef.current = new Set();
-    setAssigned([]);
-    setMerged([]);
+    setPRs(emptyTabs());
     loadTab(currentTab, token, user.login, true);
     prefetchOtherTabs(currentTab, token, user.login);
   }
@@ -120,8 +124,7 @@ export function useApp() {
     if (orgChanged && token && user) {
       await clearTabCache();
       loadedTabsRef.current = new Set();
-      setAssigned([]);
-      setMerged([]);
+      setPRs(emptyTabs());
       loadTab("assigned", token, user.login, true);
       prefetchOtherTabs("assigned", token, user.login);
     }
@@ -149,8 +152,10 @@ export function useApp() {
         setTokenState(cache.token);
         setUser(cache.user);
         // Fresh cache is rendered as-is; mark those tabs loaded so we don't refetch.
-        if (cache.assigned) { setAssigned(cache.assigned); loadedTabsRef.current.add("assigned"); }
-        if (cache.merged) { setMerged(cache.merged); loadedTabsRef.current.add("merged"); }
+        for (const tab of ALL_TABS) {
+          const cached = cache.tabs[tab];
+          if (cached) { setTabData(tab, cached); loadedTabsRef.current.add(tab); }
+        }
         setLoading(false);
 
         validateToken(cache.token)
@@ -168,8 +173,7 @@ export function useApp() {
             await clearCache();
             setTokenState(null);
             setUser(null);
-            setAssigned([]);
-            setMerged([]);
+            setPRs(emptyTabs());
           });
       } else {
         try {
@@ -192,28 +196,23 @@ export function useApp() {
       area: string
     ) => {
       if (area !== "local") return;
-      const assignedChange = changes.cached_assigned?.newValue;
-      if (assignedChange) {
-        setAssigned(assignedChange.data);
-        loadedTabsRef.current.add("assigned");
-      }
-      const mergedChange = changes.cached_merged?.newValue;
-      if (mergedChange) {
-        setMerged(mergedChange.data);
-        loadedTabsRef.current.add("merged");
+      for (const tab of ALL_TABS) {
+        const change = changes[`cached_${tab}`]?.newValue;
+        if (!change) continue;
+        setTabData(tab, change.data);
+        loadedTabsRef.current.add(tab);
       }
     };
     chrome.storage.onChanged.addListener(listener);
     return () => chrome.storage.onChanged.removeListener(listener);
-  }, []);
+  }, [setTabData]);
 
   return {
     loading,
     token,
     user,
     settings,
-    assigned,
-    merged,
+    prs,
     error,
     isLoadingPRs,
     showSettings,

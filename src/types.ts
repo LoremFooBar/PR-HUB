@@ -4,7 +4,7 @@ export interface GitHubUser {
 }
 
 export type CheckStatus = "success" | "failure" | "pending";
-export type Tab = "assigned" | "merged";
+export type Tab = "assigned" | "review" | "merged";
 export type MergeStatus = "ready" | "blocked" | "behind" | "pending";
 
 export interface PullRequestItem {
@@ -22,4 +22,7 @@ export interface PullRequestItem {
   base_ref?: string;
   head_ref?: string;
   behind?: boolean;
+  draft?: boolean;
+  // Reviews tab: already reviewed by the user, but still awaiting an approval.
+  reviewed_by_me?: boolean;
 }

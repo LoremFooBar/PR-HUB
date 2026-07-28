@@ -1,4 +1,4 @@
-import { fetchAuthoredPRs, fetchMergedPRs } from "./github";
+import { fetchAuthoredPRs, fetchMergedPRs, fetchReviewPRs } from "./github";
 import { getToken, getOrg, getCachedUser, getCachedTab, setCachedTab, getAutoSync } from "./storage";
 import { syncPRTabGroup } from "./tabs";
 
@@ -6,7 +6,7 @@ const REFRESH_ALARM = "refresh-prs";
 const REFRESH_PERIOD_MIN = 30;
 const SYNC_TABS_COMMAND = "sync-pr-tabs";
 
-// Refetch both tabs and update the cache. The open panel picks these up live
+// Refetch every tab and update the cache. The open panel picks these up live
 // via chrome.storage.onChanged, so the user never waits on a fetch when opening.
 async function refreshPRs() {
   const [token, org, user] = await Promise.all([
@@ -16,12 +16,14 @@ async function refreshPRs() {
   ]);
   if (!token || !user) return;
   try {
-    const [assigned, merged] = await Promise.all([
+    const [assigned, review, merged] = await Promise.all([
       fetchAuthoredPRs(token, user.login, org),
+      fetchReviewPRs(token, org),
       fetchMergedPRs(token, user.login, org),
     ]);
     await Promise.all([
       setCachedTab("assigned", assigned),
+      setCachedTab("review", review),
       setCachedTab("merged", merged),
     ]);
     // Keep the "My PRs" tab group current with the fresh data. Gentle: without
