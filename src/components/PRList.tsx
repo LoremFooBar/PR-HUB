@@ -7,13 +7,15 @@ import { timeAgo } from "../utils/time";
 import { usePRList } from "../hooks/usePRList";
 import { CheckIcon, BranchIcon, LinkIcon, MergeIcon, CodeIcon, WarningIcon } from "./Icons";
 
-interface PRListProps {
+export interface PRListProps {
   prs: PullRequestItem[];
   emptyMessage: string;
   showAuthor?: boolean;
   showChecks?: boolean;
   showMergedBadge?: boolean;
   showBaseBranch?: boolean;
+  showReviewedTag?: boolean;
+  showDraftTag?: boolean;
 }
 
 const MERGE_STATUS_CHAR: Record<MergeStatus, string> = {
@@ -106,7 +108,7 @@ function PRItemBadge({ mergeStatus, showMergedBadge }: {
   );
 }
 
-export default function PRList({ prs, emptyMessage, showAuthor, showChecks, showMergedBadge, showBaseBranch }: PRListProps) {
+export default function PRList({ prs, emptyMessage, showAuthor, showChecks, showMergedBadge, showBaseBranch, showReviewedTag, showDraftTag }: PRListProps) {
   const { visiblePRs, remainingCount, copiedId, copyToClipboard, showMore } = usePRList(prs);
 
   if (prs.length === 0) {
@@ -119,6 +121,8 @@ export default function PRList({ prs, emptyMessage, showAuthor, showChecks, show
         {visiblePRs.map((pr) => {
           const mergeStatus = showChecks ? getMergeStatus(pr) : null;
           const isProd = pr.base_ref ? PRODUCTION_BRANCHES.has(pr.base_ref) : false;
+          const reviewedTag = Boolean(showReviewedTag && pr.reviewed_by_me);
+          const draftTag = Boolean(showDraftTag && pr.draft);
 
           return (
             <li
@@ -144,11 +148,21 @@ export default function PRList({ prs, emptyMessage, showAuthor, showChecks, show
                   {pr.created_at && <span className="pr-date">{timeAgo(pr.created_at)}</span>}
                 </div>
 
-                {showChecks && (
+                {(showChecks || reviewedTag || draftTag) && (
                   <div className="pr-meta pr-stats">
-                    {(pr.comments ?? 0) > 0 && <span className="pr-stat" title="Comments">💬 {pr.comments}</span>}
-                    {(pr.approvals ?? 0) > 0 && <span className="pr-stat pr-stat--success" title="Approvals">✓ {pr.approvals}</span>}
-                    {(pr.changes_requested ?? 0) > 0 && <span className="pr-stat pr-stat--danger" title="Changes requested">✗ {pr.changes_requested}</span>}
+                    {showChecks && (pr.comments ?? 0) > 0 && <span className="pr-stat" title="Comments">💬 {pr.comments}</span>}
+                    {showChecks && (pr.approvals ?? 0) > 0 && <span className="pr-stat pr-stat--success" title="Approvals">✓ {pr.approvals}</span>}
+                    {showChecks && (pr.changes_requested ?? 0) > 0 && <span className="pr-stat pr-stat--danger" title="Changes requested">✗ {pr.changes_requested}</span>}
+                    {draftTag && (
+                      <span className="pr-stat pr-stat--tag" title="Draft — review was requested, but it can't be merged yet">
+                        draft
+                      </span>
+                    )}
+                    {reviewedTag && (
+                      <span className="pr-stat pr-stat--tag" title="You already reviewed this — it still needs an approval">
+                        reviewed by you
+                      </span>
+                    )}
                   </div>
                 )}
 

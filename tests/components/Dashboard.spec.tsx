@@ -22,8 +22,7 @@ function makePR(overrides: Partial<PullRequestItem> = {}): PullRequestItem {
 
 const defaultProps = {
   user: mockUser,
-  assigned: [] as PullRequestItem[],
-  merged: [] as PullRequestItem[],
+  prs: { assigned: [], review: [], merged: [] } as Record<Tab, PullRequestItem[]>,
   isLoadingPRs: false,
   error: "",
   onLogout: () => {},
@@ -38,17 +37,17 @@ test.describe("Dashboard", () => {
     await expect(component.getByText("testuser")).toBeVisible();
   });
 
-  test("renders tab bar with My PRs and Merged", async ({ mount }) => {
+  test("renders tab bar with My PRs, Reviews and Merged", async ({ mount }) => {
     const component = await mount(<Dashboard {...defaultProps} />);
     await expect(component.getByText("My PRs")).toBeVisible();
+    await expect(component.getByText("Reviews")).toBeVisible();
     await expect(component.getByText("Merged")).toBeVisible();
-    await expect(component.getByText("Reviews")).toHaveCount(0);
   });
 
   test("shows tab counts", async ({ mount }) => {
     const assigned = [makePR(), makePR({ id: 2, number: 2, title: "PR 2" })];
     const component = await mount(
-      <Dashboard {...defaultProps} assigned={assigned} />
+      <Dashboard {...defaultProps} prs={{ ...defaultProps.prs, assigned }} />
     );
     await expect(component.getByText("My PRs (2)")).toBeVisible();
   });
@@ -58,13 +57,34 @@ test.describe("Dashboard", () => {
     const component = await mount(
       <Dashboard
         {...defaultProps}
-        merged={[makePR({ base_ref: "main" })]}
+        prs={{ ...defaultProps.prs, merged: [makePR({ base_ref: "main" })] }}
         onTabChange={(tab) => { changedTab = tab; }}
       />
     );
     await component.getByText("Merged (1)").click();
     expect(changedTab).toBe("merged");
     await expect(component.getByTitle("Merged")).toBeVisible();
+  });
+
+  test("switches to Reviews tab and shows the PR author", async ({ mount }) => {
+    let changedTab = "";
+    const review = [makePR({ user: { login: "someone", avatar_url: "https://avatars.githubusercontent.com/u/2?v=4" } })];
+    const component = await mount(
+      <Dashboard
+        {...defaultProps}
+        prs={{ ...defaultProps.prs, review }}
+        onTabChange={(tab) => { changedTab = tab; }}
+      />
+    );
+    await component.getByText("Reviews (1)").click();
+    expect(changedTab).toBe("review");
+    await expect(component.getByText("someone")).toBeVisible();
+  });
+
+  test("shows the Reviews empty state", async ({ mount }) => {
+    const component = await mount(<Dashboard {...defaultProps} />);
+    await component.getByText("Reviews").click();
+    await expect(component.getByText("No PRs are waiting on your review.")).toBeVisible();
   });
 
   test("calls onOpenSettings when settings button is clicked", async ({ mount }) => {

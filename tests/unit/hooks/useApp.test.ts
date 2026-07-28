@@ -10,6 +10,7 @@ const github = jest.requireMock("../../../src/github") as {
   validateToken: jest.Mock;
   fetchAuthoredPRs: jest.Mock;
   fetchMergedPRs: jest.Mock;
+  fetchReviewPRs: jest.Mock;
 };
 
 const storage = jest.requireMock("../../../src/storage") as {
@@ -52,8 +53,7 @@ beforeEach(() => {
     ...defaultSettings,
     token: null,
     user: null,
-    assigned: null,
-    merged: null,
+    tabs: { assigned: null, review: null, merged: null },
   });
   storage.setToken.mockResolvedValue(undefined);
   storage.removeToken.mockResolvedValue(undefined);
@@ -66,6 +66,7 @@ beforeEach(() => {
   github.validateToken.mockResolvedValue(mockUser);
   github.fetchAuthoredPRs.mockResolvedValue(mockPRs);
   github.fetchMergedPRs.mockResolvedValue([]);
+  github.fetchReviewPRs.mockResolvedValue([]);
 });
 
 describe("useApp", () => {
@@ -83,8 +84,7 @@ describe("useApp", () => {
       token: "ghp_cached",
       org: "",
       user: mockUser,
-      assigned: mockPRs,
-      merged: null,
+      tabs: { assigned: mockPRs, review: null, merged: null },
     });
 
     const { result } = renderHook(() => useApp());
@@ -92,7 +92,7 @@ describe("useApp", () => {
 
     expect(result.current.loading).toBe(false);
     expect(result.current.user).toEqual(mockUser);
-    expect(result.current.assigned).toEqual(mockPRs);
+    expect(result.current.prs.assigned).toEqual(mockPRs);
   });
 
   it("does not refetch a tab that is served fresh from cache", async () => {
@@ -100,18 +100,18 @@ describe("useApp", () => {
       token: "ghp_cached",
       org: "",
       user: mockUser,
-      assigned: mockPRs,
-      merged: mockPRs,
+      tabs: { assigned: mockPRs, review: mockPRs, merged: mockPRs },
     });
 
     const { result } = renderHook(() => useApp());
     await act(() => Promise.resolve());
     await act(() => Promise.resolve());
 
-    // Both tabs were cached, so neither search endpoint should be hit.
+    // Every tab was cached, so no search endpoint should be hit.
     expect(github.fetchAuthoredPRs).not.toHaveBeenCalled();
+    expect(github.fetchReviewPRs).not.toHaveBeenCalled();
     expect(github.fetchMergedPRs).not.toHaveBeenCalled();
-    expect(result.current.merged).toEqual(mockPRs);
+    expect(result.current.prs.merged).toEqual(mockPRs);
   });
 
   it("applies the cached org scope when fetching", async () => {
@@ -119,8 +119,7 @@ describe("useApp", () => {
       token: "ghp_cached",
       org: "my-org",
       user: mockUser,
-      assigned: null,
-      merged: null,
+      tabs: { assigned: null, review: null, merged: null },
     });
 
     const { result } = renderHook(() => useApp());
@@ -142,7 +141,7 @@ describe("useApp", () => {
     expect(storage.setCachedUser).toHaveBeenCalledWith(mockUser);
     expect(result.current.user).toEqual(mockUser);
     expect(result.current.token).toBe("ghp_valid");
-    expect(result.current.assigned).toEqual(mockPRs);
+    expect(result.current.prs.assigned).toEqual(mockPRs);
   });
 
   it("clears all state on logout", async () => {
@@ -157,8 +156,8 @@ describe("useApp", () => {
     await act(() => result.current.logout());
     expect(result.current.token).toBeNull();
     expect(result.current.user).toBeNull();
-    expect(result.current.assigned).toEqual([]);
-    expect(result.current.merged).toEqual([]);
+    expect(result.current.prs.assigned).toEqual([]);
+    expect(result.current.prs.merged).toEqual([]);
     expect(storage.removeToken).toHaveBeenCalled();
     expect(storage.clearCache).toHaveBeenCalled();
   });
@@ -170,6 +169,17 @@ describe("useApp", () => {
 
     await act(() => result.current.handleTabChange("merged"));
     expect(github.fetchMergedPRs).toHaveBeenCalledWith("ghp_valid", "testuser", "");
+  });
+
+  it("loads the review tab with the active org scope and no username", async () => {
+    github.fetchReviewPRs.mockResolvedValue(mockPRs);
+    const { result } = renderHook(() => useApp());
+    await act(() => Promise.resolve());
+    await act(() => result.current.handleLogin("ghp_valid"));
+
+    await act(() => result.current.handleTabChange("review"));
+    expect(github.fetchReviewPRs).toHaveBeenCalledWith("ghp_valid", "");
+    expect(result.current.prs.review).toEqual(mockPRs);
   });
 
   it("clears data and force-reloads on handleReload", async () => {

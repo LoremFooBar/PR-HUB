@@ -163,6 +163,45 @@ export async function fetchAuthoredPRs(
   return enriched.sort(byTitle);
 }
 
+// Fresh requests first, then the ones already reviewed; alphabetical within each.
+function byReviewedThenTitle(a: PullRequestItem, b: PullRequestItem): number {
+  const rank = Number(a.reviewed_by_me ?? false) - Number(b.reviewed_by_me ?? false);
+  return rank !== 0 ? rank : byTitle(a, b);
+}
+
+// PRs waiting on the user's own review, from two searches:
+//
+// 1. `user-review-requested` — requests addressed to the user directly.
+//    `review-requested` would also return every PR requested from a team the
+//    user belongs to, drowning the list when a team is auto-requested on all
+//    PRs. The qualifier only accepts `@me`, hence no username argument.
+// 2. `reviewed-by` + `review:required` — PRs the user has already reviewed that
+//    still lack an approval. GitHub discharges a review request as soon as any
+//    review is submitted, including a comment-only one, so without this half a
+//    PR that still needs the user's approval would silently drop out.
+//
+// Overlap (the author re-requested after a review) counts as a fresh request.
+// Drafts are *not* excluded: a review can be requested on a draft PR, and such a
+// request is as real as any other — the item's `draft` flag marks them instead.
+export async function fetchReviewPRs(
+  token: string,
+  org?: string,
+): Promise<PullRequestItem[]> {
+  const [requested, reviewed] = await Promise.all([
+    searchPRs(token, scoped("type:pr is:open user-review-requested:@me", org)),
+    searchPRs(token, scoped("type:pr is:open reviewed-by:@me review:required -author:@me", org)),
+  ]);
+  const requestedIds = new Set(requested.map((pr) => pr.id));
+  const all = [
+    ...requested,
+    ...reviewed
+      .filter((pr) => !requestedIds.has(pr.id))
+      .map((pr) => ({ ...pr, reviewed_by_me: true })),
+  ];
+  const enriched = await Promise.all(all.map((pr) => enrichPR(token, pr)));
+  return enriched.sort(byReviewedThenTitle);
+}
+
 async function fetchBaseRef(
   token: string,
   pr: PullRequestItem,

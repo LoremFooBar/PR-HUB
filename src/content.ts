@@ -1,4 +1,5 @@
 import type { PullRequestItem } from "./types";
+import { TAB_CACHE_KEYS } from "./constants";
 import { normalizePRUrl } from "./utils/pr-url";
 import { getMergeStatus } from "./utils/merge-status";
 import { getRepoName } from "./utils/repo";
@@ -31,9 +32,10 @@ function readCache(result: Record<string, unknown>) {
     (result[key] as { data?: PullRequestItem[] } | undefined)?.data ?? [];
 
   byUrl.clear();
-  // The assigned tab is indexed last, so a PR listed in both keeps its open
-  // entry — the one carrying check status and review counts.
+  // The open tabs are indexed last, so a PR listed in more than one keeps its
+  // open entry — the one carrying check status and review counts.
   addToIndex(items("cached_merged"), true);
+  addToIndex(items("cached_review"), false);
   addToIndex(items("cached_assigned"), false);
 }
 
@@ -181,7 +183,7 @@ function start() {
   });
 
   chrome.storage.local.get(
-    ["link_preview", "cached_assigned", "cached_merged"],
+    ["link_preview", ...TAB_CACHE_KEYS],
     (result) => {
       enabled = result.link_preview ?? true;
       readCache(result);
@@ -195,8 +197,8 @@ function start() {
       enabled = changes.link_preview.newValue ?? true;
       if (!enabled) hide();
     }
-    if ("cached_assigned" in changes || "cached_merged" in changes) {
-      chrome.storage.local.get(["cached_assigned", "cached_merged"], readCache);
+    if (TAB_CACHE_KEYS.some((key) => key in changes)) {
+      chrome.storage.local.get(TAB_CACHE_KEYS, readCache);
     }
   });
 }
