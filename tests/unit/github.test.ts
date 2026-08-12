@@ -18,7 +18,7 @@ let queries: string[] = [];
 beforeEach(() => {
   queries = [];
   // Search returns fixtures; every enrichment endpoint fails, so enrichPR falls
-  // back to the search payload — enough to assert merge/dedup/order.
+  // back to the search payload — enough to assert merge/dedup/flags.
   (globalThis as { fetch: unknown }).fetch = jest.fn(async (url: string) => {
     if (!url.includes("/search/issues")) return { ok: false, json: async () => ({}) };
     const query = new URL(url).searchParams.get("q") ?? "";
@@ -54,15 +54,15 @@ describe("fetchReviewPRs", () => {
 
   it("merges both searches, deduping a PR that appears in each", async () => {
     const prs = await fetchReviewPRs("ghp_x");
-    expect(prs.map((pr) => pr.id)).toEqual([1, 2, 3]);
+    expect(prs.map((pr) => pr.id)).toEqual([2, 1, 3]);
   });
 
-  it("flags only the already-reviewed PRs and sorts them last", async () => {
+  it("flags only the already-reviewed PRs", async () => {
     const prs = await fetchReviewPRs("ghp_x");
 
     expect(prs.map((pr) => [pr.title, pr.reviewed_by_me ?? false])).toEqual([
-      ["A pending", false],
       ["B pending", false],
+      ["A pending", false],
       ["C reviewed", true],
     ]);
   });
@@ -70,8 +70,8 @@ describe("fetchReviewPRs", () => {
   it("keeps the draft flag from the search payload", async () => {
     const prs = await fetchReviewPRs("ghp_x");
     expect(prs.map((pr) => [pr.title, pr.draft ?? false])).toEqual([
-      ["A pending", true],
       ["B pending", false],
+      ["A pending", true],
       ["C reviewed", false],
     ]);
   });

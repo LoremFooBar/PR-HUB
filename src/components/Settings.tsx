@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { GROUP_COLORS, type AppSettings, type TabSortOrder } from "../storage";
+import { GROUP_COLORS, type AppSettings, type PRSortOrder } from "../storage";
 
-const SORT_ORDERS: { value: TabSortOrder; label: string }[] = [
+const SORT_ORDERS: { value: PRSortOrder; label: string }[] = [
+  { value: "ticket_date", label: "By ticket number, then date" },
   { value: "title", label: "By title" },
   { value: "title_date", label: "By title, then date" },
   { value: "date", label: "By date" },
@@ -107,15 +108,19 @@ export default function Settings({ settings, onSave, onCancel }: SettingsProps) 
           />
         ))}
       </div>
-      <label className="settings-label">Tab order in the PR group</label>
+      <label className="settings-label">PR order</label>
+      <p className="settings-hint">
+        Applies to the list in this panel and to the tabs in the "My PRs" group.
+        A ticket number is one at the start of the PR title, such as ABC-1234.
+      </p>
       <div className="settings-radio-group">
         {SORT_ORDERS.map(({ value, label }) => (
           <label key={value} className="settings-radio">
             <input
               type="radio"
-              name="tab-sort-order"
-              checked={draft.tabSortOrder === value}
-              onChange={() => update("tabSortOrder", value)}
+              name="pr-sort-order"
+              checked={draft.prSortOrder === value}
+              onChange={() => update("prSortOrder", value)}
             />
             {label}
           </label>

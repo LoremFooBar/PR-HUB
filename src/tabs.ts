@@ -1,5 +1,5 @@
-import { getGroupColor, getStrayTabAction, getTabSortOrder } from "./storage";
-import { sortPRsForTabGroup } from "./utils/sort";
+import { getGroupColor, getStrayTabAction, getPRSortOrder } from "./storage";
+import { sortPRs } from "./utils/sort";
 import type { PullRequestItem } from "./types";
 
 const PR_GROUP_TITLE = "My PRs";
@@ -30,12 +30,12 @@ function matchDesiredUrl(tabUrl: string, desired: string[]): string | undefined 
 // Opens every given PR in a single tab group and keeps that group in sync:
 // tabs for PRs that are no longer open are closed, missing PRs are opened, and
 // the result is (re)grouped under one collapsible "My PRs" group. Tabs are laid
-// out in the order chosen by the tab-sort setting (default alphabetical by title).
+// out in the order chosen by the PR-order setting.
 export async function syncPRTabGroup(
   prs: PullRequestItem[],
   { gentle = false, create = false }: SyncPRTabGroupOptions = {}
 ): Promise<void> {
-  const urls = sortPRsForTabGroup(prs, await getTabSortOrder()).map(
+  const urls = sortPRs(prs, await getPRSortOrder()).map(
     (pr) => pr.html_url
   );
   if (typeof chrome === "undefined" || !chrome.tabs || !chrome.tabGroups) {

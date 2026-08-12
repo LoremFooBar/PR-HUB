@@ -1,8 +1,8 @@
 import type { GitHubUser, PullRequestItem, Tab } from "./types";
 import { ALL_TABS, TAB_CACHE_KEYS } from "./constants";
-import type { TabSortOrder } from "./utils/sort";
+import type { PRSortOrder } from "./utils/sort";
 
-export type { TabSortOrder };
+export type { PRSortOrder };
 
 const storage =
   typeof chrome !== "undefined" && chrome.storage
@@ -63,7 +63,7 @@ export interface AppSettings {
   // Whether the background refresh re-syncs the "My PRs" tab group, creating it
   // if missing. When off, the group only changes on a manual sync.
   autoSync: boolean;
-  tabSortOrder: TabSortOrder;
+  prSortOrder: PRSortOrder;
   linkPreview: boolean;
 }
 
@@ -72,7 +72,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   strayTabAction: "ungroup",
   groupColor: "blue",
   autoSync: false,
-  tabSortOrder: "title",
+  prSortOrder: "ticket_date",
   linkPreview: true,
 };
 
@@ -99,11 +99,11 @@ export function getAutoSync(): Promise<boolean> {
   );
 }
 
-export function getTabSortOrder(): Promise<TabSortOrder> {
-  if (!storage) return Promise.resolve(DEFAULT_SETTINGS.tabSortOrder);
+export function getPRSortOrder(): Promise<PRSortOrder> {
+  if (!storage) return Promise.resolve(DEFAULT_SETTINGS.prSortOrder);
   return new Promise((resolve) =>
-    storage.get("tab_sort_order", (result) =>
-      resolve(result.tab_sort_order ?? DEFAULT_SETTINGS.tabSortOrder)
+    storage.get("pr_sort_order", (result) =>
+      resolve(result.pr_sort_order ?? DEFAULT_SETTINGS.prSortOrder)
     )
   );
 }
@@ -127,7 +127,7 @@ export function setSettings(settings: AppSettings): Promise<void> {
         stray_tab_action: settings.strayTabAction,
         group_color: settings.groupColor,
         auto_sync: settings.autoSync,
-        tab_sort_order: settings.tabSortOrder,
+        pr_sort_order: settings.prSortOrder,
         link_preview: settings.linkPreview,
       },
       () => resolve()
@@ -208,7 +208,7 @@ export interface InitCache extends AppSettings {
 
 export function getInitCache(): Promise<InitCache> {
   if (!storage) return Promise.resolve({ ...DEFAULT_SETTINGS, token: null, user: null, tabs: noCachedTabs() });
-  const keys = ["gh_token", "gh_org", "stray_tab_action", "group_color", "auto_sync", "tab_sort_order", "link_preview", "cached_user", ...TAB_CACHE_KEYS];
+  const keys = ["gh_token", "gh_org", "stray_tab_action", "group_color", "auto_sync", "pr_sort_order", "link_preview", "cached_user", ...TAB_CACHE_KEYS];
   return new Promise((resolve) =>
     storage.get(keys, (result) => {
       // On open we always show whatever is cached, regardless of age — the
@@ -224,7 +224,7 @@ export function getInitCache(): Promise<InitCache> {
         strayTabAction: result.stray_tab_action ?? DEFAULT_SETTINGS.strayTabAction,
         groupColor: result.group_color ?? DEFAULT_SETTINGS.groupColor,
         autoSync: result.auto_sync ?? DEFAULT_SETTINGS.autoSync,
-        tabSortOrder: result.tab_sort_order ?? DEFAULT_SETTINGS.tabSortOrder,
+        prSortOrder: result.pr_sort_order ?? DEFAULT_SETTINGS.prSortOrder,
         linkPreview: result.link_preview ?? DEFAULT_SETTINGS.linkPreview,
         user: result.cached_user ?? null,
         tabs,

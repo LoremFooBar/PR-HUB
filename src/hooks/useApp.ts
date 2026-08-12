@@ -139,7 +139,7 @@ export function useApp() {
         strayTabAction: cache.strayTabAction,
         groupColor: cache.groupColor,
         autoSync: cache.autoSync,
-        tabSortOrder: cache.tabSortOrder,
+        prSortOrder: cache.prSortOrder,
         linkPreview: cache.linkPreview,
       });
 

@@ -29,7 +29,7 @@ const defaultSettings = {
   strayTabAction: "ungroup" as const,
   groupColor: "blue" as const,
   autoSync: false,
-  tabSortOrder: "title" as const,
+  prSortOrder: "title" as const,
   linkPreview: true,
 };
 

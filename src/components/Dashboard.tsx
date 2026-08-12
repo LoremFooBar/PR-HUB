@@ -4,6 +4,7 @@ import { ALL_TABS } from "../constants";
 import { openOrFocusTab, syncPRTabGroup } from "../tabs";
 import type { TabData } from "../hooks/useApp";
 import { filterPRs } from "../utils/search";
+import { sortPRs, type PRSortOrder } from "../utils/sort";
 import PRList, { type PRListProps } from "./PRList";
 import SearchBar from "./SearchBar";
 import { PRListSkeleton } from "./Skeleton";
@@ -12,6 +13,7 @@ import { OpenTabsIcon, ReloadIcon, SettingsIcon } from "./Icons";
 interface DashboardProps {
   user: GitHubUser;
   prs: TabData;
+  sortOrder: PRSortOrder;
   isLoadingPRs: boolean;
   error: string;
   onLogout(): void;
@@ -39,7 +41,7 @@ const TAB_VIEW: Record<Tab, { name: string; empty: string; list: Omit<PRListProp
   },
 };
 
-export default function Dashboard({ user, prs, isLoadingPRs, error, onLogout, onReload, onTabChange, onOpenSettings }: DashboardProps) {
+export default function Dashboard({ user, prs, sortOrder, isLoadingPRs, error, onLogout, onReload, onTabChange, onOpenSettings }: DashboardProps) {
   const [tab, setTab] = useState<Tab>("assigned");
   // One shared filter query, applied to whichever tab is active. Kept across
   // tab switches but not persisted, so it resets when the panel reopens.
@@ -47,7 +49,10 @@ export default function Dashboard({ user, prs, isLoadingPRs, error, onLogout, on
 
   const view = TAB_VIEW[tab];
   const activeList = prs[tab];
-  const filtered = useMemo(() => filterPRs(activeList, query), [activeList, query]);
+  const visible = useMemo(
+    () => sortPRs(filterPRs(activeList, query), sortOrder),
+    [activeList, query, sortOrder]
+  );
   const showSearch = !isLoadingPRs && !error && activeList.length > 0;
   const emptyMessage = query ? `No PRs match "${query}".` : view.empty;
 
@@ -108,7 +113,7 @@ export default function Dashboard({ user, prs, isLoadingPRs, error, onLogout, on
           <SearchBar
             value={query}
             onChange={setQuery}
-            resultCount={filtered.length}
+            resultCount={visible.length}
             totalCount={activeList.length}
           />
         )}
@@ -120,7 +125,7 @@ export default function Dashboard({ user, prs, isLoadingPRs, error, onLogout, on
         ) : error ? (
           <p className="error-text">{error}</p>
         ) : (
-          <PRList prs={filtered} emptyMessage={emptyMessage} {...view.list} />
+          <PRList prs={visible} emptyMessage={emptyMessage} {...view.list} />
         )}
       </div>
     </div>

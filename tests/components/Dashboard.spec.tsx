@@ -23,6 +23,7 @@ function makePR(overrides: Partial<PullRequestItem> = {}): PullRequestItem {
 const defaultProps = {
   user: mockUser,
   prs: { assigned: [], review: [], merged: [] } as Record<Tab, PullRequestItem[]>,
+  sortOrder: "ticket_date" as const,
   isLoadingPRs: false,
   error: "",
   onLogout: () => {},

@@ -41,11 +41,6 @@ function scoped(query: string, org?: string): string {
   return org ? `${query} org:${org}` : query;
 }
 
-// Alphabetical by title, case-insensitive, so lists have a stable order.
-function byTitle(a: PullRequestItem, b: PullRequestItem): number {
-  return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
-}
-
 export async function validateToken(token: string): Promise<GitHubUser> {
   const res = await fetch(`${API}/user`, { headers: headers(token) });
   if (!res.ok) throw new Error("Invalid token");
@@ -159,14 +154,7 @@ export async function fetchAuthoredPRs(
   org?: string,
 ): Promise<PullRequestItem[]> {
   const authored = await searchPRs(token, scoped(`type:pr author:${username} is:open`, org));
-  const enriched = await Promise.all(authored.map((pr) => enrichPR(token, pr)));
-  return enriched.sort(byTitle);
-}
-
-// Fresh requests first, then the ones already reviewed; alphabetical within each.
-function byReviewedThenTitle(a: PullRequestItem, b: PullRequestItem): number {
-  const rank = Number(a.reviewed_by_me ?? false) - Number(b.reviewed_by_me ?? false);
-  return rank !== 0 ? rank : byTitle(a, b);
+  return Promise.all(authored.map((pr) => enrichPR(token, pr)));
 }
 
 // PRs waiting on the user's own review, from two searches:
@@ -198,8 +186,7 @@ export async function fetchReviewPRs(
       .filter((pr) => !requestedIds.has(pr.id))
       .map((pr) => ({ ...pr, reviewed_by_me: true })),
   ];
-  const enriched = await Promise.all(all.map((pr) => enrichPR(token, pr)));
-  return enriched.sort(byReviewedThenTitle);
+  return Promise.all(all.map((pr) => enrichPR(token, pr)));
 }
 
 async function fetchBaseRef(
@@ -224,6 +211,5 @@ export async function fetchMergedPRs(
 ): Promise<PullRequestItem[]> {
   const mergedSince = oneWeekAgo();
   const merged = await searchPRs(token, scoped(`type:pr author:${username} is:merged merged:>${mergedSince}`, org));
-  const withBase = await Promise.all(merged.map((pr) => fetchBaseRef(token, pr)));
-  return withBase.sort(byTitle);
+  return Promise.all(merged.map((pr) => fetchBaseRef(token, pr)));
 }

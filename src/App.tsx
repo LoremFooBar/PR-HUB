@@ -41,6 +41,7 @@ export default function App() {
     <Dashboard
       user={user}
       prs={prs}
+      sortOrder={settings.prSortOrder}
       isLoadingPRs={isLoadingPRs}
       error={error}
       onLogout={logout}
