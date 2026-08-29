@@ -5,6 +5,7 @@ import { getMergeStatus } from "./utils/merge-status";
 import { getRepoName } from "./utils/repo";
 import { timeAgo } from "./utils/time";
 import { PREVIEW_STYLE } from "./preview-style";
+import { MARKER, OPEN_PR, isTrustedOrigin } from "./bridge";
 
 const HOVER_DELAY_MS = 200;
 const EDGE_GAP = 8;
@@ -173,7 +174,26 @@ function onMouseOver(event: MouseEvent) {
   }, HOVER_DELAY_MS);
 }
 
+// Relays a PR Tower click to the service worker, which owns the tab APIs. The
+// checks are what keep this from being an open door: only this document, only a
+// loopback origin. The service worker checks the origin and the URL again.
+function onBridgeMessage(event: MessageEvent) {
+  if (event.source !== window || !isTrustedOrigin(event.origin)) return;
+  const data = event.data as { type?: string; url?: string } | null;
+  if (data?.type !== OPEN_PR || typeof data.url !== "string") return;
+  chrome.runtime.sendMessage({ type: OPEN_PR, url: data.url });
+}
+
+function startBridge() {
+  // Only the top document: a framed page is not PR Tower, whatever it is served
+  // from.
+  if (window.top !== window || !isTrustedOrigin(window.location.origin)) return;
+  document.documentElement.dataset[MARKER] = "1";
+  window.addEventListener("message", onBridgeMessage);
+}
+
 function start() {
+  startBridge();
   document.addEventListener("mouseover", onMouseOver, true);
   document.addEventListener("mouseleave", hide);
   window.addEventListener("scroll", hide, { capture: true, passive: true });

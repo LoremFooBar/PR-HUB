@@ -1,6 +1,8 @@
 import { fetchAuthoredPRs, fetchMergedPRs, fetchReviewPRs } from "./github";
 import { getToken, getOrg, getCachedUser, getCachedTab, setCachedTab, getAutoSync } from "./storage";
-import { syncPRTabGroup } from "./tabs";
+import { openPRInGroup, syncPRTabGroup } from "./tabs";
+import { OPEN_PR, isTrustedOrigin } from "./bridge";
+import { normalizePRUrl } from "./utils/pr-url";
 
 const REFRESH_ALARM = "refresh-prs";
 const REFRESH_PERIOD_MIN = 30;
@@ -62,6 +64,17 @@ chrome.commands?.onCommand.addListener(async (command) => {
   const assigned = await getCachedTab("assigned");
   if (!assigned || assigned.length === 0) return;
   await syncPRTabGroup(assigned);
+});
+
+// A PR Tower click, relayed by the content script. The origin is checked again
+// here and the URL is normalized rather than trusted: normalizePRUrl returns
+// null for anything that is not a github.com pull-request URL, so a page cannot
+// use this to open a tab at an address of its choosing.
+chrome.runtime.onMessage.addListener((message, sender) => {
+  if (message?.type !== OPEN_PR) return;
+  if (!sender.tab || !isTrustedOrigin(sender.origin)) return;
+  const url = typeof message.url === "string" ? normalizePRUrl(message.url) : null;
+  if (url) openPRInGroup(url);
 });
 
 // Clicking the toolbar icon opens the side panel instead of a popup.

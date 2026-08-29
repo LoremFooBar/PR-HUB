@@ -126,6 +126,41 @@ export async function syncPRTabGroup(
   await chrome.tabs.move(orderedTabIds, { index: startIndex });
 }
 
+// The single-PR counterpart of syncPRTabGroup, for a click in PR Tower: it
+// brings one PR up in the "My PRs" group and never closes or reorders anything.
+export async function openPRInGroup(url: string): Promise<void> {
+  if (typeof chrome === "undefined" || !chrome.tabs || !chrome.tabGroups) return;
+
+  const [group] = await chrome.tabGroups.query({ title: PR_GROUP_TITLE });
+  const existing = (await chrome.tabs.query({ url: "https://github.com/*" })).find(
+    (tab) => tab.url && matchDesiredUrl(tab.url, [url])
+  );
+
+  if (existing?.id != null) {
+    await chrome.tabs.update(existing.id, { active: true });
+    await chrome.windows.update(existing.windowId, { focused: true });
+    // Pulling a tab out of another window would move it from under the user;
+    // only a tab already beside the group joins it.
+    if (group && existing.groupId !== group.id && existing.windowId === group.windowId) {
+      await chrome.tabs.group({ groupId: group.id, tabIds: [existing.id] });
+    }
+    return;
+  }
+
+  const windowId =
+    group?.windowId ?? (await chrome.windows.getLastFocused().catch(() => null))?.id;
+  const tab = await chrome.tabs.create({ url, active: true, windowId });
+  if (tab.id == null) return;
+
+  const groupId = await chrome.tabs.group(
+    group ? { groupId: group.id, tabIds: [tab.id] } : { tabIds: [tab.id] }
+  );
+  await chrome.tabGroups.update(groupId, {
+    title: PR_GROUP_TITLE,
+    color: await getGroupColor(),
+  });
+}
+
 export function openOrFocusTab(url: string) {
   if (typeof chrome === "undefined" || !chrome.tabs) {
     window.open(url, "_blank");
