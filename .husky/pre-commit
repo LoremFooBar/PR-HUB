@@ -1,0 +1,4 @@
+git diff --cached --name-only | grep -qx 'package-lock.json' || exit 0
+
+node scripts/public-registry-lockfile.mjs
+git add package-lock.json

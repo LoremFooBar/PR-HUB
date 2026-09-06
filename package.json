@@ -11,7 +11,8 @@
     "mock": "vite --open /mock.html",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:ct": "playwright test -c playwright-ct.config.ts"
+    "test:ct": "playwright test -c playwright-ct.config.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "react": "^19.2.7",
@@ -28,6 +29,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.7.0",
+    "husky": "^9.1.7",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
     "playwright": "^1.61.1",
