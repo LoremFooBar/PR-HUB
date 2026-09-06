@@ -54,7 +54,7 @@ Follow DRY (Don't Repeat Yourself) and ETC (Easy To Change) principles in all ch
 - Required scopes: `repo`, `read:user`.
 - The Merged tab is filtered to the last week (`merged:>{lastWeek}`) to limit results.
 - The Reviews tab is the union of two searches, deduped by PR id:
-  - `user-review-requested:@me` — requests addressed to the user **directly**. Not `review-requested:`, which also returns every PR requested from a team the user belongs to and floods the tab when a team is auto-requested on all PRs (measured: 0 vs 136 in `daylightsec`). The qualifier only accepts `@me`, hence no username argument.
+  - `user-review-requested:@me` — requests addressed to the user **directly**. Not `review-requested:`, which also returns every PR requested from a team the user belongs to and floods the tab when a team is auto-requested on all PRs. The qualifier only accepts `@me`, hence no username argument.
   - `reviewed-by:@me review:required -author:@me` — PRs the user already reviewed that still lack an approval. GitHub discharges a review request as soon as *any* review is submitted, including a comment-only one, so without this half a PR still needing the user's approval silently drops out of the tab.
   A PR in both (the author re-requested after a review) counts as a fresh request. Items from the second search carry `reviewed_by_me`, which `sortPRs` treats as the first sort key so they land after the fresh requests in every order, marked with a "reviewed by you" chip.
   Neither query excludes drafts: a review can be requested on a draft PR (GitHub even banners "waiting on your review" there), so `-is:draft` would silently drop real requests. Drafts get a "draft" chip instead, from the search payload's `draft` flag — also shown on "My PRs".
