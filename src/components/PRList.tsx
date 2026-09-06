@@ -144,6 +144,7 @@ export default function PRList({ prs, emptyMessage, showAuthor, showChecks, show
 
                 <div className="pr-meta">
                   <span className="pr-repo">{getRepoName(pr.repository_url)}</span>
+                  <span className="pr-number">#{pr.number}</span>
                   <BaseBranchBadge baseRef={pr.base_ref} isProd={isProd} showBranch={showBaseBranch} />
                   {pr.created_at && <span className="pr-date">{timeAgo(pr.created_at)}</span>}
                 </div>

@@ -33,7 +33,7 @@ export default function SearchBar({ value, onChange, resultCount, totalCount }: 
         ref={inputRef}
         type="text"
         className="search-input"
-        placeholder="Filter PRs…"
+        placeholder="Filter PRs or #215…"
         aria-label="Filter pull requests"
         value={value}
         onChange={(e) => onChange(e.target.value)}
