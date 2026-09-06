@@ -703,6 +703,12 @@ body {
   min-width: 0;
 }
 
+.pr-number {
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  flex-shrink: 0;
+}
+
 .pr-date {
   font-size: 11px;
   color: var(--color-fg-muted);

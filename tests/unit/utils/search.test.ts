@@ -58,6 +58,37 @@ describe("filterPRs", () => {
     expect(filterPRs(withAuthor, "octocat")).toHaveLength(1);
   });
 
+  it("matches a PR number with a # prefix", () => {
+    const numbered = [makePR({ id: 1, number: 215 }), makePR({ id: 2, number: 1215 })];
+    const result = filterPRs(numbered, "#215");
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe(1);
+  });
+
+  it("does not fall back to text for a # token", () => {
+    const numbered = [makePR({ id: 1, number: 7, title: "Bump to 215" })];
+    expect(filterPRs(numbered, "#215")).toEqual([]);
+  });
+
+  it("matches a bare number against the PR number or the text", () => {
+    const numbered = [
+      makePR({ id: 1, number: 215, title: "Unrelated" }),
+      makePR({ id: 2, number: 9, title: "[PLA-215] ticket" }),
+      makePR({ id: 3, number: 30, title: "Other" }),
+    ];
+    expect(filterPRs(numbered, "215").map((pr) => pr.id)).toEqual([1, 2]);
+  });
+
+  it("combines a PR number with other tokens (AND)", () => {
+    const numbered = [
+      makePR({ id: 1, number: 215, title: "Fix login" }),
+      makePR({ id: 2, number: 215, title: "Add dark mode" }),
+    ];
+    const result = filterPRs(numbered, "#215 dark");
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe(2);
+  });
+
   it("returns an empty array when nothing matches", () => {
     expect(filterPRs(prs, "PLA-999")).toEqual([]);
   });
